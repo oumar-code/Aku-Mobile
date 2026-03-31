@@ -12,6 +12,7 @@ Tracks the completion status of automated migration and setup tasks for the Akul
 - [x] Add Android platform implementation (`Platform.android.kt`)
 - [x] Add iOS platform implementation (`Platform.ios.kt`)
 - [x] Create root `.gitignore` (Gradle, IDE, KMP targets)
+- [x] Add CI workflow (`.github/workflows/build.yml`) — Android + iOS build jobs
 - [x] Create root `README.md` with migration notice and getting-started instructions
 - [x] Update `docs/03-mobile/index.md` with link to new repo
 - [x] Update `docs/ecosystem-map.md` — Aku-Mobile status: **Pending** → **Active**
