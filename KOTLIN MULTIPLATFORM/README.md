@@ -22,8 +22,8 @@ KOTLIN MULTIPLATFORM/
 
 ## Prerequisites
 
-- JDK 17
-- Android SDK (set `ANDROID_HOME` or create `local.properties`)
+- JDK 17 or later (JDK 25 works — source/target compatibility is Java 17)
+- Android SDK (set `ANDROID_HOME` or create `local.properties` in this directory)
 - Xcode (for iOS targets, macOS only)
 
 ## Building

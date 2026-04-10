@@ -1,46 +1,7 @@
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-}
-
-kotlin {
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
-    }
-
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "shared"
-            isStatic = true
-        }
-    }
-
-    sourceSets {
-        commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
-        }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-        }
-    }
-}
-plugins {
-    id("org.jetbrains.kotlin.multiplatform") version "2.1.0"
-    id("com.android.library") version "8.5.2"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
-}
-
-repositories {
-    google()
-    mavenCentral()
+    id("org.jetbrains.kotlin.multiplatform")
+    id("com.android.library")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 kotlin {
@@ -100,19 +61,6 @@ android {
 
     defaultConfig {
         minSdk = 26
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-android {
-    namespace = "com.akulearn.shared"
-    compileSdk = 34
-
-    defaultConfig {
-        minSdk = 24
     }
 
     compileOptions {
