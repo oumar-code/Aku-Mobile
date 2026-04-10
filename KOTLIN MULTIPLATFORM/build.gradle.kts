@@ -1,6 +1,2 @@
-plugins {
-    alias(libs.plugins.androidApplication).apply(false)
-    alias(libs.plugins.androidLibrary).apply(false)
-    alias(libs.plugins.kotlinAndroid).apply(false)
-    alias(libs.plugins.kotlinMultiplatform).apply(false)
-}
+// Top-level build file — plugin declarations are managed in settings.gradle.kts.
+// No additional configuration needed here.
