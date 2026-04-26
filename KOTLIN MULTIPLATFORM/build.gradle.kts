@@ -1,2 +1,9 @@
-// Top-level build file — plugin declarations are managed in settings.gradle.kts.
-// No additional configuration needed here.
+plugins {
+    // Declare versions here and set 'apply false' to share them across modules
+    id("com.android.application") version "8.5.2" apply false
+    id("com.android.library") version "8.5.2" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.multiplatform") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0" apply false
+}

@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.akuplatform.android"
-    compileSdk = 35
+    compileSdk = 34 // Lowered from 35 to match AGP 8.5.2
 
     defaultConfig {
         applicationId = "com.akuplatform.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34 // Lowered from 35
         versionCode = 1
         versionName = "1.0.0"
 
