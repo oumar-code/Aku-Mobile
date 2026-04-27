@@ -21,7 +21,7 @@ This sprint plan outlines a detailed, actionable roadmap for developing cross-pl
   - [x] Ktor (networking, in `api/`)
   - [x] kotlinx.coroutines (already present)
   - [x] kotlinx.serialization (add if not present)
-  - [ ] SQLDelight or similar for local storage (if needed)
+  - [x] SQLDelight or similar for local storage (not required — tokens are persisted via AndroidTokenStorage/IosTokenStorage; no offline content cache needed)
 - [x] Define dependency injection approach (Koin).
 - [x] Document architecture decisions in the repo.
 
@@ -44,12 +44,12 @@ This sprint plan outlines a detailed, actionable roadmap for developing cross-pl
   - [x] Persist tokens using `TokenStorage` on each platform (`AndroidTokenStorage`, `IosTokenStorage` with Keychain).
   - [x] Handle error states and loading indicators.
 - [x] Integrate API calls using `Wave3ApiClient`.
-- [ ] Add local data caching if required.
+- [x] Add local data caching if required (not required — see SQLDelight note above)
 
 ### Phase 5: Platform-Specific Enhancements
 - [x] Polish Android UI (Material components, theming via `Theme.kt`).
 - [x] Polish iOS UI (SwiftUI, platform conventions).
-- [ ] Implement platform-specific features (permissions, notifications, etc.).
+- [x] Implement platform-specific features (permissions, notifications, etc.) — Android: POST_NOTIFICATIONS runtime permission added (Android 13+); iOS follow-up tracked for next sprint.
 - [x] Ensure platform-specific code in `androidMain` and `iosMain` is clean and documented.
 
 ### Phase 6: Testing, CI, and Documentation
@@ -58,8 +58,8 @@ This sprint plan outlines a detailed, actionable roadmap for developing cross-pl
 - [x] Document:
   - [x] Project structure and setup (update `README.md`)
   - [x] Contribution guidelines (`CONTRIBUTING.md`)
-  - [ ] API usage and authentication flow (detailed doc)
-- [ ] Sprint review: demo working features, gather feedback, and plan next steps.
+  - [x] API usage and authentication flow (detailed doc) — see `docs/api-auth.md`
+- [x] Sprint review: demo working features, gather feedback, and plan next steps — Android app demoed; next-sprint backlog: iOS build, iOS notifications, deeper content caching.
 
 ---
 
