@@ -63,7 +63,7 @@ private fun AkulearnApp(
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState()
 
-    // Initialise session once (reads persisted token from storage).
+    // Initialize session once (reads persisted token from storage).
     LaunchedEffect(Unit) { sessionManager.initialize() }
 
     NavHost(navController = navController, startDestination = "splash") {
