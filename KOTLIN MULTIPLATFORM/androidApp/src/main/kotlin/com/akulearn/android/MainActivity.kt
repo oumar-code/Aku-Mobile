@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.akulearn.android.notifications.RequestNotificationPermission
 import com.akulearn.android.ui.ForgotPasswordScreen
 import com.akulearn.android.ui.ForgotPasswordViewModel
 import com.akulearn.android.ui.HomeScreen
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
 private fun AkulearnApp(authRepository: AuthRepository) {
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState()
+
+    // Request POST_NOTIFICATIONS permission on Android 13+ at app launch.
+    RequestNotificationPermission()
 
     // Initialize session (reads persisted token; auto-refreshes if expired).
     LaunchedEffect(Unit) { authRepository.initialize() }

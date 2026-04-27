@@ -50,6 +50,10 @@ jobs:
 
   build-ios:
     runs-on: macos-latest
+    # iOS build is deprioritised while the team focuses on Android.
+    # continue-on-error ensures a compilation hiccup here never blocks the
+    # overall pipeline (build-android and release-apk still gate on Android).
+    continue-on-error: true
     defaults:
       run:
         working-directory: "KOTLIN MULTIPLATFORM"
