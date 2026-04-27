@@ -180,7 +180,7 @@ class CourseRepositoryTest {
         assertTrue(result.isSuccess)
         assertNotNull(result.getOrNull())
         // Cache should be invalidated so next getCourses call goes to API
-        assertEquals(null, fakeCache.getCourses(), "cache should be cleared after enrolment")
+        assertEquals(null, fakeCache.getCourses(), "cache should be cleared after enrollment")
     }
 
     @Test
@@ -192,6 +192,6 @@ class CourseRepositoryTest {
         assertTrue(result.isFailure)
         assertIs<ApiError.Unauthorized>(result.exceptionOrNull())
         // Cache should still be intact
-        assertNotNull(fakeCache.getCourses(), "cache should not be cleared on failed enrolment")
+        assertNotNull(fakeCache.getCourses(), "cache should not be cleared on failed enrollment")
     }
 }

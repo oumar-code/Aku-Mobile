@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Represents a learner's enrolment in a [Course].
+ * Represents a learner's enrollment in a [Course].
  */
 @Serializable
 data class Enrollment(

@@ -44,7 +44,7 @@ class CourseRepository(
     suspend fun getLessons(courseId: String): Result<List<Lesson>> =
         apiClient.getLessons(courseId = courseId, token = token())
 
-    /** Returns the current user's enrolments. Always fetches from the network. */
+    /** Returns the current user's enrollments. Always fetches from the network. */
     suspend fun getEnrolledCourses(): Result<List<Enrollment>> =
         apiClient.getEnrolledCourses(token = token())
 
