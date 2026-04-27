@@ -10,34 +10,33 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class LoginUiState(
+data class ForgotPasswordUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSuccess: Boolean = false
 )
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class ForgotPasswordViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LoginUiState())
-    val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ForgotPasswordUiState())
+    val uiState: StateFlow<ForgotPasswordUiState> = _uiState.asStateFlow()
 
-    fun login(email: String, password: String) {
-        if (email.isBlank() || password.isBlank()) {
-            _uiState.value = LoginUiState(error = "Email and password are required.")
+    fun requestReset(email: String) {
+        if (email.isBlank()) {
+            _uiState.value = ForgotPasswordUiState(error = "Email is required.")
             return
         }
         viewModelScope.launch {
-            _uiState.value = LoginUiState(isLoading = true)
-            authRepository.login(email, password)
-                .onSuccess { _uiState.value = LoginUiState(isSuccess = true) }
+            _uiState.value = ForgotPasswordUiState(isLoading = true)
+            authRepository.requestPasswordReset(email)
+                .onSuccess { _uiState.value = ForgotPasswordUiState(isSuccess = true) }
                 .onFailure { e ->
                     val message = when (e) {
-                        is ApiError.Unauthorized -> "Invalid email or password."
                         is ApiError.Network -> "Network error. Check your connection."
                         is ApiError.ServerError -> "Server error. Please try again later."
-                        else -> e.message ?: "Login failed. Please try again."
+                        else -> e.message ?: "Request failed. Please try again."
                     }
-                    _uiState.value = LoginUiState(error = message)
+                    _uiState.value = ForgotPasswordUiState(error = message)
                 }
         }
     }
@@ -49,6 +48,6 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
     class Factory(private val authRepository: AuthRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            LoginViewModel(authRepository) as T
+            ForgotPasswordViewModel(authRepository) as T
     }
 }
