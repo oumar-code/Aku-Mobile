@@ -1,15 +1,21 @@
 package com.akuplatform.shared.api
 
 import com.akuplatform.shared.auth.model.AuthToken
+import com.akuplatform.shared.course.model.Course
+import com.akuplatform.shared.course.model.Enrollment
+import com.akuplatform.shared.course.model.Lesson
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -33,6 +39,9 @@ private data class RegisterRequest(
 
 @Serializable
 private data class ForgotPasswordRequest(val email: String)
+
+@Serializable
+private data class EnrollRequest(@SerialName("course_id") val courseId: String)
 
 @Serializable
 internal data class TokenResponse(
@@ -92,6 +101,11 @@ class Wave3ApiClient(
         }
     }
 
+    /** Adds a Bearer [token] Authorization header when [token] is not null. */
+    private fun io.ktor.client.request.HttpRequestBuilder.bearerAuth(token: String?) {
+        if (token != null) header(HttpHeaders.Authorization, "Bearer $token")
+    }
+
     // ── public API ───────────────────────────────────────────────────────────
 
     suspend fun authenticate(email: String, password: String): Result<AuthToken> =
@@ -125,6 +139,45 @@ class Wave3ApiClient(
                 setBody(ForgotPasswordRequest(email))
             }.requireSuccess()
             Unit
+        }
+
+    // ── course API ────────────────────────────────────────────────────────────
+
+    suspend fun getCourses(token: String? = null): Result<List<Course>> =
+        safeCall {
+            httpClient.get("$baseUrl/courses") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    suspend fun getCourseById(id: String, token: String? = null): Result<Course> =
+        safeCall {
+            httpClient.get("$baseUrl/courses/$id") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    suspend fun getLessons(courseId: String, token: String? = null): Result<List<Lesson>> =
+        safeCall {
+            httpClient.get("$baseUrl/courses/$courseId/lessons") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    suspend fun getEnrolledCourses(token: String? = null): Result<List<Enrollment>> =
+        safeCall {
+            httpClient.get("$baseUrl/enrollments") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    suspend fun enrollInCourse(courseId: String, token: String? = null): Result<Enrollment> =
+        safeCall {
+            httpClient.post("$baseUrl/enrollments") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(token)
+                setBody(EnrollRequest(courseId))
+            }.requireSuccess().body()
         }
 
     fun close() = httpClient.close()

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onBrowseCourses: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -43,6 +44,15 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(48.dp))
+
+            Button(
+                onClick = onBrowseCourses,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Browse Courses")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = onLogout,

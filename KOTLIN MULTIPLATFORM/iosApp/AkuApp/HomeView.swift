@@ -4,11 +4,17 @@ import shared  // KMP shared framework
 struct HomeView: View {
 
     private let authRepository: AuthRepository
+    private let courseRepository: CourseRepository
     @ObservedObject private var authState: AuthState
     @State private var isLoggingOut: Bool = false
 
-    init(authRepository: AuthRepository, authState: AuthState) {
+    init(
+        authRepository: AuthRepository,
+        courseRepository: CourseRepository,
+        authState: AuthState
+    ) {
         self.authRepository = authRepository
+        self.courseRepository = courseRepository
         self.authState = authState
     }
 
@@ -22,6 +28,17 @@ struct HomeView: View {
                     .multilineTextAlignment(.center)
 
                 Spacer().frame(height: 48)
+
+                NavigationLink {
+                    CoursesView(courseRepository: courseRepository)
+                } label: {
+                    Text("Browse Courses")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal, 32)
+
+                Spacer().frame(height: 16)
 
                 Button(action: performLogout) {
                     if isLoggingOut {
