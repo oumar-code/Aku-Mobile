@@ -28,12 +28,10 @@ internal data class TokenResponse(
     @SerialName("expires_in") val expiresIn: Long
 )
 
-class Wave3ApiClient internal constructor(
-    private val baseUrl: String,
-    private val httpClient: HttpClient
+class Wave3ApiClient(
+    private val baseUrl: String = BASE_URL,
+    private val httpClient: HttpClient = defaultClient()
 ) {
-
-    constructor(baseUrl: String = BASE_URL) : this(baseUrl, defaultClient())
 
     companion object {
         const val BASE_URL = "https://api.akulearn.com/v3"
