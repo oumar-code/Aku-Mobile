@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.akuplatform.android"
+    namespace = "com.akulearn.android"
     compileSdk = 34 // Lowered from 35 to match AGP 8.5.2
 
     defaultConfig {
