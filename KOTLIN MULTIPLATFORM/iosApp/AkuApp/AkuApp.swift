@@ -8,6 +8,7 @@ struct AkuApp: App {
     private let tokenStorage = IosTokenStorage()
     private let sessionManager: SessionManager
     private let authRepository: AuthRepository
+    private let notificationService = IosNotificationService()
 
     init() {
         sessionManager = SessionManager(tokenStorage: tokenStorage)
@@ -23,6 +24,8 @@ struct AkuApp: App {
                 .task {
                     // Initialize session on launch (reads Keychain; auto-refreshes if expired).
                     try? await authRepository.initialize()
+                    // Request push-notification permission early in the app lifecycle.
+                    _ = try? await notificationService.requestPermission()
                 }
         }
     }
