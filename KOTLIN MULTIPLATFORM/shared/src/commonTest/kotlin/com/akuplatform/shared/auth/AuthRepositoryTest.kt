@@ -12,11 +12,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -68,7 +70,7 @@ class AuthRepositoryTest {
         assertTrue(result.isSuccess)
         assertEquals("tok", result.getOrThrow().accessToken)
         assertTrue(repo.isLoggedIn.value)
-        assertEquals(AuthToken("tok", "ref", 3600), sessionManager.getToken())
+        assertEquals("tok", sessionManager.getToken()?.accessToken)
     }
 
     @Test
@@ -88,5 +90,71 @@ class AuthRepositoryTest {
         repo.logout()
         assertFalse(repo.isLoggedIn.value)
         assertNull(repo.getCurrentToken())
+    }
+
+    @Test
+    fun `initialize with valid token keeps session active`() = runTest {
+        val validToken = AuthToken(
+            accessToken = "valid",
+            refreshToken = "refresh",
+            expiresIn = 3600,
+            expiresAt = Clock.System.now().epochSeconds + 3600
+        )
+        storage = FakeTokenStorage(initialToken = validToken)
+        sessionManager = SessionManager(storage)
+        val repo = AuthRepository(sessionManager, successClient())
+        repo.initialize()
+        assertTrue(repo.isLoggedIn.value)
+        assertEquals("valid", repo.getCurrentToken()?.accessToken)
+    }
+
+    @Test
+    fun `initialize with expired token refreshes automatically`() = runTest {
+        val expiredToken = AuthToken(
+            accessToken = "old",
+            refreshToken = "old-refresh",
+            expiresIn = 3600,
+            expiresAt = Clock.System.now().epochSeconds - 1  // expired
+        )
+        storage = FakeTokenStorage(initialToken = expiredToken)
+        sessionManager = SessionManager(storage)
+        val repo = AuthRepository(sessionManager, successClient())
+        repo.initialize()
+        // After refresh the new token ("tok") should replace the expired one.
+        assertTrue(repo.isLoggedIn.value)
+        assertEquals("tok", repo.getCurrentToken()?.accessToken)
+    }
+
+    @Test
+    fun `initialize with expired token and failed refresh clears session`() = runTest {
+        val expiredToken = AuthToken(
+            accessToken = "old",
+            refreshToken = "old-refresh",
+            expiresIn = 3600,
+            expiresAt = Clock.System.now().epochSeconds - 1  // expired
+        )
+        storage = FakeTokenStorage(initialToken = expiredToken)
+        sessionManager = SessionManager(storage)
+        val repo = AuthRepository(sessionManager, failureClient())
+        repo.initialize()
+        assertFalse(repo.isLoggedIn.value)
+        assertNull(repo.getCurrentToken())
+    }
+
+    @Test
+    fun `register success saves session and emits isLoggedIn true`() = runTest {
+        val repo = AuthRepository(sessionManager, successClient())
+        val result = repo.register("user@example.com", "pass", "Test User")
+        assertTrue(result.isSuccess)
+        assertEquals("tok", result.getOrThrow().accessToken)
+        assertTrue(repo.isLoggedIn.value)
+        assertNotNull(repo.getCurrentToken())
+    }
+
+    @Test
+    fun `requestPasswordReset returns success on valid email`() = runTest {
+        val repo = AuthRepository(sessionManager, successClient())
+        val result = repo.requestPasswordReset("user@example.com")
+        assertTrue(result.isSuccess)
     }
 }

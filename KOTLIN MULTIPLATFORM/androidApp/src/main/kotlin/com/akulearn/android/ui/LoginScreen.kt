@@ -18,6 +18,7 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,7 +36,9 @@ import androidx.compose.ui.unit.dp
 fun LoginScreen(
     uiState: LoginUiState,
     onLogin: (email: String, password: String) -> Unit,
-    onErrorDismissed: () -> Unit
+    onErrorDismissed: () -> Unit,
+    onForgotPassword: () -> Unit = {},
+    onRegister: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -92,7 +95,17 @@ fun LoginScreen(
                 enabled = !uiState.isLoading
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = onForgotPassword,
+                modifier = Modifier.align(Alignment.End),
+                enabled = !uiState.isLoading
+            ) {
+                Text("Forgot password?")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = { onLogin(email, password) },
@@ -108,6 +121,16 @@ fun LoginScreen(
                 } else {
                     Text("Log In")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = onRegister,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isLoading
+            ) {
+                Text("Don't have an account? Sign up")
             }
         }
 

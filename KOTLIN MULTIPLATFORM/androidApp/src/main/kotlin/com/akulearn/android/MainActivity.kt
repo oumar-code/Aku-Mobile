@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,25 +18,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.akulearn.android.auth.AndroidTokenStorage
+import com.akulearn.android.ui.ForgotPasswordScreen
+import com.akulearn.android.ui.ForgotPasswordViewModel
+import com.akulearn.android.ui.HomeScreen
+import com.akulearn.android.ui.HomeViewModel
 import com.akulearn.android.ui.LoginScreen
 import com.akulearn.android.ui.LoginViewModel
-import com.akuplatform.shared.api.Wave3ApiClient
+import com.akulearn.android.ui.RegisterScreen
+import com.akulearn.android.ui.RegisterViewModel
 import com.akuplatform.shared.auth.AuthRepository
-import com.akuplatform.shared.auth.SessionManager
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var authRepository: AuthRepository
-    private lateinit var sessionManager: SessionManager
+    private val authRepository: AuthRepository by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val tokenStorage = AndroidTokenStorage(applicationContext)
-        sessionManager = SessionManager(tokenStorage)
-        val baseUrl = BuildConfig.WAVE3_BASE_URL.ifBlank { Wave3ApiClient.BASE_URL }
-        authRepository = AuthRepository(sessionManager, Wave3ApiClient(baseUrl))
 
         setContent {
             MyApplicationTheme {
@@ -45,10 +42,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AkulearnApp(
-                        sessionManager = sessionManager,
-                        authRepository = authRepository
-                    )
+                    AkulearnApp(authRepository = authRepository)
                 }
             }
         }
@@ -56,19 +50,15 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AkulearnApp(
-    sessionManager: SessionManager,
-    authRepository: AuthRepository
-) {
+private fun AkulearnApp(authRepository: AuthRepository) {
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState()
 
-    // Initialize session once (reads persisted token from storage).
-    LaunchedEffect(Unit) { sessionManager.initialize() }
+    // Initialize session (reads persisted token; auto-refreshes if expired).
+    LaunchedEffect(Unit) { authRepository.initialize() }
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
-            // Show a brief loading indicator while the session is being initialised.
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -97,20 +87,59 @@ private fun AkulearnApp(
             LoginScreen(
                 uiState = uiState,
                 onLogin = viewModel::login,
-                onErrorDismissed = viewModel::clearError
+                onErrorDismissed = viewModel::clearError,
+                onForgotPassword = { navController.navigate("forgot-password") },
+                onRegister = { navController.navigate("register") }
             )
         }
 
         composable("home") {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Welcome to Akulearn!",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+            val viewModel: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(authRepository)
+            )
+            HomeScreen(
+                onLogout = {
+                    viewModel.logout {
+                        navController.navigate("login") {
+                            popUpTo("home") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
+
+        composable("register") {
+            val viewModel: RegisterViewModel = viewModel(
+                factory = RegisterViewModel.Factory(authRepository)
+            )
+            val uiState by viewModel.uiState.collectAsState()
+            LaunchedEffect(uiState.isSuccess) {
+                if (uiState.isSuccess) {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
             }
+            RegisterScreen(
+                uiState = uiState,
+                onRegister = viewModel::register,
+                onErrorDismissed = viewModel::clearError,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("forgot-password") {
+            val viewModel: ForgotPasswordViewModel = viewModel(
+                factory = ForgotPasswordViewModel.Factory(authRepository)
+            )
+            val uiState by viewModel.uiState.collectAsState()
+            ForgotPasswordScreen(
+                uiState = uiState,
+                onSubmit = viewModel::requestReset,
+                onErrorDismissed = viewModel::clearError,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

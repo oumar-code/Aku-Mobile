@@ -8,9 +8,12 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.datetime.Clock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -20,6 +23,16 @@ private data class LoginRequest(val email: String, val password: String)
 
 @Serializable
 private data class RefreshRequest(@SerialName("refresh_token") val refreshToken: String)
+
+@Serializable
+private data class RegisterRequest(
+    val email: String,
+    val password: String,
+    val name: String
+)
+
+@Serializable
+private data class ForgotPasswordRequest(val email: String)
 
 @Serializable
 internal data class TokenResponse(
@@ -49,22 +62,69 @@ class Wave3ApiClient(
         }
     }
 
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private fun TokenResponse.toAuthToken(): AuthToken = AuthToken(
+        accessToken = accessToken,
+        refreshToken = refreshToken,
+        expiresIn = expiresIn,
+        expiresAt = Clock.System.now().epochSeconds + expiresIn
+    )
+
+    /**
+     * Wraps an API call, mapping transport exceptions to [ApiError.Network]
+     * and non-2xx HTTP responses to [ApiError.Unauthorized] / [ApiError.ServerError].
+     */
+    private suspend fun <T> safeCall(block: suspend () -> T): Result<T> = try {
+        Result.success(block())
+    } catch (e: ApiError) {
+        Result.failure(e)
+    } catch (e: Exception) {
+        Result.failure(ApiError.Network(e.message ?: "Network error"))
+    }
+
+    private suspend fun HttpResponse.requireSuccess(): HttpResponse {
+        return when (status) {
+            HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NoContent -> this
+            HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden ->
+                throw ApiError.Unauthorized()
+            else -> throw ApiError.ServerError(status.value)
+        }
+    }
+
+    // ── public API ───────────────────────────────────────────────────────────
+
     suspend fun authenticate(email: String, password: String): Result<AuthToken> =
-        runCatching {
-            val response: TokenResponse = httpClient.post("$baseUrl/auth/login") {
+        safeCall {
+            httpClient.post("$baseUrl/auth/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequest(email, password))
-            }.body()
-            AuthToken(response.accessToken, response.refreshToken, response.expiresIn)
+            }.requireSuccess().body<TokenResponse>().toAuthToken()
         }
 
     suspend fun refreshToken(refreshToken: String): Result<AuthToken> =
-        runCatching {
-            val response: TokenResponse = httpClient.post("$baseUrl/auth/refresh") {
+        safeCall {
+            httpClient.post("$baseUrl/auth/refresh") {
                 contentType(ContentType.Application.Json)
                 setBody(RefreshRequest(refreshToken))
-            }.body()
-            AuthToken(response.accessToken, response.refreshToken, response.expiresIn)
+            }.requireSuccess().body<TokenResponse>().toAuthToken()
+        }
+
+    suspend fun register(email: String, password: String, name: String): Result<AuthToken> =
+        safeCall {
+            httpClient.post("$baseUrl/auth/register") {
+                contentType(ContentType.Application.Json)
+                setBody(RegisterRequest(email, password, name))
+            }.requireSuccess().body<TokenResponse>().toAuthToken()
+        }
+
+    suspend fun requestPasswordReset(email: String): Result<Unit> =
+        safeCall {
+            httpClient.post("$baseUrl/auth/forgot-password") {
+                contentType(ContentType.Application.Json)
+                setBody(ForgotPasswordRequest(email))
+            }.requireSuccess()
+            Unit
         }
 
     fun close() = httpClient.close()
