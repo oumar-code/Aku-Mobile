@@ -19,20 +19,27 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akulearn.android.notifications.RequestNotificationPermission
+import com.akulearn.android.ui.CourseDetailScreen
+import com.akulearn.android.ui.CourseDetailViewModel
+import com.akulearn.android.ui.CoursesScreen
+import com.akulearn.android.ui.CoursesViewModel
 import com.akulearn.android.ui.ForgotPasswordScreen
 import com.akulearn.android.ui.ForgotPasswordViewModel
 import com.akulearn.android.ui.HomeScreen
 import com.akulearn.android.ui.HomeViewModel
+import com.akulearn.android.ui.LessonsScreen
 import com.akulearn.android.ui.LoginScreen
 import com.akulearn.android.ui.LoginViewModel
 import com.akulearn.android.ui.RegisterScreen
 import com.akulearn.android.ui.RegisterViewModel
 import com.akuplatform.shared.auth.AuthRepository
+import com.akuplatform.shared.course.CourseRepository
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
 
     private val authRepository: AuthRepository by inject()
+    private val courseRepository: CourseRepository by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +50,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AkulearnApp(authRepository = authRepository)
+                    AkulearnApp(
+                        authRepository = authRepository,
+                        courseRepository = courseRepository
+                    )
                 }
             }
         }
@@ -51,7 +61,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AkulearnApp(authRepository: AuthRepository) {
+private fun AkulearnApp(
+    authRepository: AuthRepository,
+    courseRepository: CourseRepository
+) {
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState()
 
@@ -102,6 +115,7 @@ private fun AkulearnApp(authRepository: AuthRepository) {
                 factory = HomeViewModel.Factory(authRepository)
             )
             HomeScreen(
+                onBrowseCourses = { navController.navigate("courses") },
                 onLogout = {
                     viewModel.logout {
                         navController.navigate("login") {
@@ -110,6 +124,51 @@ private fun AkulearnApp(authRepository: AuthRepository) {
                         }
                     }
                 }
+            )
+        }
+
+        composable("courses") {
+            val viewModel: CoursesViewModel = viewModel(
+                factory = CoursesViewModel.Factory(courseRepository)
+            )
+            val uiState by viewModel.uiState.collectAsState()
+            CoursesScreen(
+                uiState = uiState,
+                onCourseClick = { course ->
+                    navController.navigate("course/${course.id}")
+                },
+                onErrorDismissed = viewModel::clearError
+            )
+        }
+
+        composable("course/{courseId}") { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            val viewModel: CourseDetailViewModel = viewModel(
+                factory = CourseDetailViewModel.Factory(courseRepository, courseId)
+            )
+            val uiState by viewModel.uiState.collectAsState()
+            CourseDetailScreen(
+                uiState = uiState,
+                onEnroll = viewModel::enroll,
+                onEnrollmentErrorDismissed = viewModel::clearEnrollmentError,
+                onViewLessons = { navController.navigate("lessons/$courseId") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("lessons/{courseId}") { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            // Re-use the CourseDetailViewModel from the back stack if available;
+            // otherwise create a fresh one to load lessons.
+            val viewModel: CourseDetailViewModel = viewModel(
+                factory = CourseDetailViewModel.Factory(courseRepository, courseId)
+            )
+            val uiState by viewModel.uiState.collectAsState()
+            LessonsScreen(
+                courseTitle = uiState.course?.title ?: "Lessons",
+                lessons = uiState.lessons,
+                isLoading = uiState.isLoading,
+                onBack = { navController.popBackStack() }
             )
         }
 
