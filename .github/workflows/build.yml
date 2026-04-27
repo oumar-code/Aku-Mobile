@@ -35,6 +35,9 @@ jobs:
       - name: Build shared module (Android)
         run: ./gradlew :shared:assembleDebug
 
+      - name: Run shared unit tests
+        run: ./gradlew :shared:allTests
+
       - name: Build Android app (debug APK)
         run: ./gradlew :androidApp:assembleDebug
 
