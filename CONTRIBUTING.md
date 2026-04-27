@@ -39,8 +39,14 @@ sdk.dir=/path/to/your/Android/sdk
 ```
 Aku-Mobile/
 ├── KOTLIN MULTIPLATFORM/   ← Gradle project root (all Gradle commands run here)
-│   ├── shared/             ← KMP library: auth, API, session (commonMain/androidMain/iosMain)
-│   ├── androidApp/         ← Android app module
+│   ├── shared/             ← KMP library: auth, API, courses, notifications
+│   │   └── src/
+│   │       ├── commonMain/ ← Shared Kotlin (auth, course, notifications, di)
+│   │       ├── androidMain/← Android implementations
+│   │       ├── iosMain/    ← iOS/Kotlin-Native implementations
+│   │       └── commonTest/ ← Shared unit tests
+│   ├── androidApp/         ← Android Jetpack Compose app
+│   ├── iosApp/             ← iOS SwiftUI app
 │   ├── gradle/             ← Gradle wrapper + version catalog (libs.versions.toml)
 │   └── build-all.sh        ← Convenience script to build all targets
 ├── docs/                   ← Architecture decision records and ecosystem map
@@ -110,6 +116,15 @@ cd "KOTLIN MULTIPLATFORM"
 ```
 
 Tests live in `shared/src/commonTest/`. There are no platform-specific tests yet.
+
+### Test packages
+
+| Package | Tests |
+|---------|-------|
+| `com.akuplatform.shared.auth` | `AuthRepositoryTest`, `SessionManagerTest` |
+| `com.akuplatform.shared.api` | `Wave3ApiClientTest` |
+| `com.akuplatform.shared.course` | `CourseRepositoryTest` |
+| `com.akuplatform.shared.auth.model` | `AuthTokenTest` |
 
 ---
 

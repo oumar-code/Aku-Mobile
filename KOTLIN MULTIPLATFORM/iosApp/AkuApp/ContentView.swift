@@ -6,9 +6,11 @@ struct ContentView: View {
 
     @ObservedObject private var authState: AuthState
     private let authRepository: AuthRepository
+    private let courseRepository: CourseRepository
 
-    init(authRepository: AuthRepository) {
+    init(authRepository: AuthRepository, courseRepository: CourseRepository) {
         self.authRepository = authRepository
+        self.courseRepository = courseRepository
         self.authState = AuthState(authRepository: authRepository)
     }
 
@@ -19,7 +21,11 @@ struct ContentView: View {
                     .progressViewStyle(.circular)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if authState.isLoggedIn {
-                HomeView(authRepository: authRepository, authState: authState)
+                HomeView(
+                    authRepository: authRepository,
+                    courseRepository: courseRepository,
+                    authState: authState
+                )
             } else {
                 LoginView(authRepository: authRepository, authState: authState)
             }
