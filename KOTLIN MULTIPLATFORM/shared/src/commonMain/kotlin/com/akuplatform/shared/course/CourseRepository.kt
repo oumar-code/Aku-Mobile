@@ -4,6 +4,7 @@ import com.akuplatform.shared.api.Wave3ApiClient
 import com.akuplatform.shared.auth.SessionManager
 import com.akuplatform.shared.course.cache.CourseCache
 import com.akuplatform.shared.course.cache.InMemoryCourseCache
+import com.akuplatform.shared.course.model.Certificate
 import com.akuplatform.shared.course.model.Course
 import com.akuplatform.shared.course.model.Enrollment
 import com.akuplatform.shared.course.model.Lesson
@@ -52,6 +53,33 @@ class CourseRepository(
     suspend fun enrollInCourse(courseId: String): Result<Enrollment> =
         apiClient.enrollInCourse(courseId = courseId, token = token())
             .also { if (it.isSuccess) cache.invalidate() }
+
+    /** Marks a lesson as complete for the current user. */
+    suspend fun markLessonComplete(lessonId: String): Result<Unit> =
+        apiClient.markLessonComplete(lessonId = lessonId, token = token())
+
+    /**
+     * Searches courses by [query].
+     * Uses client-side filtering when the catalogue is cached;
+     * falls back to the server search endpoint otherwise.
+     */
+    suspend fun searchCourses(query: String): Result<List<Course>> {
+        val cached = cache.getCourses()
+        if (cached != null) {
+            val q = query.trim().lowercase()
+            return Result.success(
+                if (q.isBlank()) cached
+                else cached.filter {
+                    it.title.lowercase().contains(q) || it.instructor.lowercase().contains(q)
+                }
+            )
+        }
+        return apiClient.searchCourses(query = query, token = token())
+    }
+
+    /** Returns the current user's certificates. */
+    suspend fun getCertificates(): Result<List<Certificate>> =
+        apiClient.getCertificates(token = token())
 
     /** Manually invalidates the courses cache, forcing the next [getCourses] to re-fetch. */
     suspend fun invalidateCache() = cache.invalidate()

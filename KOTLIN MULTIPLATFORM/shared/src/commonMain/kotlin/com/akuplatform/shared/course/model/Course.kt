@@ -14,5 +14,7 @@ data class Course(
     @SerialName("image_url") val imageUrl: String? = null,
     val instructor: String = "",
     @SerialName("lesson_count") val lessonCount: Int = 0,
-    @SerialName("duration_minutes") val durationMinutes: Int = 0
+    @SerialName("duration_minutes") val durationMinutes: Int = 0,
+    val category: String = "",
+    val tags: List<String> = emptyList()
 )

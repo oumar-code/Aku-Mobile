@@ -11,9 +11,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+enum class DurationFilter { ALL, SHORT, MEDIUM, LONG }
+
 data class CoursesUiState(
     val isLoading: Boolean = false,
     val courses: List<Course> = emptyList(),
+    val filteredCourses: List<Course> = emptyList(),
+    val query: String = "",
+    val durationFilter: DurationFilter = DurationFilter.ALL,
     val error: String? = null
 )
 
@@ -28,10 +33,15 @@ class CoursesViewModel(private val courseRepository: CourseRepository) : ViewMod
 
     fun loadCourses() {
         viewModelScope.launch {
-            _uiState.value = CoursesUiState(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             courseRepository.getCourses()
                 .onSuccess { courses ->
-                    _uiState.value = CoursesUiState(courses = courses)
+                    val filtered = applyFilters(courses, _uiState.value.query, _uiState.value.durationFilter)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        courses = courses,
+                        filteredCourses = filtered
+                    )
                 }
                 .onFailure { e ->
                     val message = when (e) {
@@ -40,9 +50,38 @@ class CoursesViewModel(private val courseRepository: CourseRepository) : ViewMod
                         is ApiError.ServerError -> "Server error. Please try again later."
                         else -> e.message ?: "Failed to load courses."
                     }
-                    _uiState.value = CoursesUiState(error = message)
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = message)
                 }
         }
+    }
+
+    fun onSearch(query: String) {
+        val filtered = applyFilters(_uiState.value.courses, query, _uiState.value.durationFilter)
+        _uiState.value = _uiState.value.copy(query = query, filteredCourses = filtered)
+    }
+
+    fun onDurationFilter(filter: DurationFilter) {
+        val filtered = applyFilters(_uiState.value.courses, _uiState.value.query, filter)
+        _uiState.value = _uiState.value.copy(durationFilter = filter, filteredCourses = filtered)
+    }
+
+    private fun applyFilters(courses: List<Course>, query: String, duration: DurationFilter): List<Course> {
+        val q = query.trim().lowercase()
+        return courses
+            .filter { course ->
+                q.isBlank() ||
+                    course.title.lowercase().contains(q) ||
+                    course.instructor.lowercase().contains(q) ||
+                    course.category.lowercase().contains(q)
+            }
+            .filter { course ->
+                when (duration) {
+                    DurationFilter.ALL -> true
+                    DurationFilter.SHORT -> course.durationMinutes in 1..30
+                    DurationFilter.MEDIUM -> course.durationMinutes in 31..60
+                    DurationFilter.LONG -> course.durationMinutes > 60
+                }
+            }
     }
 
     fun clearError() {
