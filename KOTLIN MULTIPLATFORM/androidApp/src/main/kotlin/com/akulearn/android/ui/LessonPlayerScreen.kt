@@ -18,7 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -209,7 +209,7 @@ private fun VideoPlaceholder(contentUrl: String, onOpenExternal: () -> Unit) {
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.PlayCircle,
+                    imageVector = Icons.Filled.PlayCircleFilled,
                     contentDescription = "Play video",
                     modifier = Modifier.fillMaxSize(),
                     tint = MaterialTheme.colorScheme.primary
