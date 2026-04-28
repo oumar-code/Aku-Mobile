@@ -51,7 +51,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.akuplatform.shared.course.model.Lesson
@@ -246,22 +245,24 @@ private fun VideoPlayer(
         }
     }
 
-    // Report playback position changes to the ViewModel
-    DisposableEffect(exoPlayer) {
-        val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                val duration = exoPlayer.duration.takeIf { it > 0L } ?: return
+    // Poll position every second while the player is active to get accurate progress.
+    LaunchedEffect(exoPlayer) {
+        while (true) {
+            val duration = exoPlayer.duration.takeIf { it > 0L }
+            if (duration != null) {
                 onPositionChanged(exoPlayer.currentPosition, duration)
             }
+            kotlinx.coroutines.delay(1_000L)
         }
-        exoPlayer.addListener(listener)
+    }
+
+    DisposableEffect(exoPlayer) {
         onDispose {
             // Persist final position before releasing
             val duration = exoPlayer.duration.takeIf { it > 0L }
             if (duration != null) {
                 onPositionChanged(exoPlayer.currentPosition, duration)
             }
-            exoPlayer.removeListener(listener)
             exoPlayer.release()
         }
     }

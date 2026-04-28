@@ -50,8 +50,8 @@ class LessonPlayerViewModel(
             ?.putFloat(fractionKey(lesson.id), fraction)
             ?.apply()
 
-        // Auto-mark complete when reaching ≥ 90 % of the video
-        if (fraction >= 0.90f && !_uiState.value.isCompleted && !_uiState.value.isMarkingComplete) {
+        // Auto-mark complete when reaching ≥ COMPLETION_THRESHOLD of the video
+        if (fraction >= COMPLETION_THRESHOLD && !_uiState.value.isCompleted && !_uiState.value.isMarkingComplete) {
             markComplete()
         }
     }
@@ -105,6 +105,8 @@ class LessonPlayerViewModel(
 
     companion object {
         const val PREFS_NAME = "aku_playback"
+        /** Fraction of video duration at which the lesson is automatically marked complete. */
+        const val COMPLETION_THRESHOLD = 0.90f
         private fun positionKey(lessonId: String) = "pos_$lessonId"
         private fun fractionKey(lessonId: String) = "frac_$lessonId"
     }

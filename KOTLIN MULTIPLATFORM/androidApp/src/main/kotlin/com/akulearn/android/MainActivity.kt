@@ -113,10 +113,11 @@ private fun Uri.toNavRoute(): String? {
     if (scheme != DeepLinkHandler.SCHEME) return null
     return when (authority) {
         DeepLinkHandler.PATH_LESSON -> {
-            val lessonId = pathSegments.firstOrNull() ?: return null
-            // We cannot reconstruct the full Lesson JSON from just the ID here;
-            // navigate to the course detail instead so the user can tap the lesson.
-            null // handled below via courseId-only deep link until the full lesson is fetched
+            // A lesson deep-link requires the full Lesson object which is not available from
+            // just the ID without a network fetch.  Navigate to the course catalogue instead so
+            // the user lands on a useful screen.  A future improvement can fetch the lesson's
+            // courseId from the API and navigate to "lessons/{courseId}" directly.
+            "courses"
         }
         DeepLinkHandler.PATH_COURSE -> {
             val courseId = pathSegments.firstOrNull() ?: return null
