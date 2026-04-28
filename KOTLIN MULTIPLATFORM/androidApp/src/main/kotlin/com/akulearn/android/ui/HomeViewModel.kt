@@ -60,13 +60,6 @@ class HomeViewModel(
 
     fun refresh() = loadHomeData()
 
-    fun logout(onComplete: () -> Unit) {
-        viewModelScope.launch {
-            authRepository.logout()
-            onComplete()
-        }
-    }
-
     class Factory(
         private val authRepository: AuthRepository,
         private val courseRepository: CourseRepository

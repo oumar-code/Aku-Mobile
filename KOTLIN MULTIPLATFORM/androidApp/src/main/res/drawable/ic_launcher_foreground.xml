@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Material "school" icon scaled to fill the adaptive-icon safe zone (72 dp centred
+    inside the 108 dp canvas).  Scale factor 3×, offset (+18, +18).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Mortarboard base (chevron shape) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,27L21,45l33,18l27,-14.73V69h6V45L54,27z" />
+
+    <!-- Mortarboard tassel / hanging corners -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,57.54v12L54,81l21,-11.46v-12L54,69z" />
+
+</vector>

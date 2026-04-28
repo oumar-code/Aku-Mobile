@@ -1,7 +1,7 @@
 package com.akulearn.android.ui
 
-import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +18,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,16 +35,35 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import com.akuplatform.shared.course.model.Lesson
 import com.akuplatform.shared.course.model.LessonContentType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+/** Simple JSON quiz format understood by the lesson player. */
+@Serializable
+private data class QuizQuestion(
+    val question: String = "",
+    val choices: List<String> = emptyList(),
+    val correctIndex: Int = -1
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +74,6 @@ fun LessonPlayerScreen(
     onBack: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
 
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
@@ -114,13 +133,9 @@ fun LessonPlayerScreen(
                     // Content by type
                     when (lesson.contentType) {
                         LessonContentType.VIDEO -> {
-                            VideoPlaceholder(
-                                contentUrl = lesson.contentUrl,
-                                onOpenExternal = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(lesson.contentUrl))
-                                    context.startActivity(intent)
-                                }
-                            )
+                            if (lesson.contentUrl.isNotBlank()) {
+                                VideoPlayer(contentUrl = lesson.contentUrl)
+                            }
                             if (lesson.body.isNotBlank()) {
                                 Text(
                                     text = lesson.body,
@@ -129,11 +144,7 @@ fun LessonPlayerScreen(
                             }
                         }
                         LessonContentType.QUIZ -> {
-                            Text(
-                                text = "Quiz content will appear here.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            QuizContent(body = lesson.body)
                         }
                         else -> {
                             val body = lesson.body.ifBlank { lesson.description }
@@ -195,34 +206,127 @@ fun LessonPlayerScreen(
     }
 }
 
+/** Plays [contentUrl] in-app using Media3 ExoPlayer. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-private fun VideoPlaceholder(contentUrl: String, onOpenExternal: () -> Unit) {
-    Box(
+private fun VideoPlayer(contentUrl: String) {
+    val context = LocalContext.current
+    val exoPlayer = remember(contentUrl) {
+        ExoPlayer.Builder(context).build().also { player ->
+            player.setMediaItem(MediaItem.fromUri(contentUrl))
+            player.prepare()
+        }
+    }
+    DisposableEffect(exoPlayer) {
+        onDispose { exoPlayer.release() }
+    }
+    AndroidView(
+        factory = { ctx ->
+            PlayerView(ctx).apply {
+                player = exoPlayer
+            }
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(16f / 9f),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            IconButton(
-                onClick = onOpenExternal,
-                modifier = Modifier.size(64.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayCircleFilled,
-                    contentDescription = "Play video",
-                    modifier = Modifier.fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            .aspectRatio(16f / 9f)
+    )
+}
+
+/**
+ * Renders a multiple-choice quiz parsed from [body] JSON.
+ *
+ * Expected JSON format:
+ * ```json
+ * { "question": "...", "choices": ["A", "B", "C", "D"], "correctIndex": 0 }
+ * ```
+ * If the body cannot be parsed the raw text is displayed instead.
+ */
+@Composable
+private fun QuizContent(body: String) {
+    var selectedIndex by remember { mutableIntStateOf(-1) }
+    var revealed by remember { mutableStateOf(false) }
+
+    val quiz = remember(body) {
+        try {
+            Json { ignoreUnknownKeys = true }.decodeFromString(QuizQuestion.serializer(), body)
+                .takeIf {
+                    it.question.isNotBlank() &&
+                        it.choices.isNotEmpty() &&
+                        it.correctIndex in it.choices.indices
+                }
+        } catch (e: Exception) {
+            android.util.Log.w("QuizContent", "Failed to parse quiz JSON: ${e.message}")
+            null
+        }
+    }
+
+    if (quiz != null) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = quiz.question,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            quiz.choices.forEachIndexed { index, choice ->
+                val isSelected = selectedIndex == index
+                val isCorrect = index == quiz.correctIndex
+                val cardColor = when {
+                    !revealed && isSelected -> MaterialTheme.colorScheme.primaryContainer
+                    revealed && isCorrect -> MaterialTheme.colorScheme.tertiaryContainer
+                    revealed && isSelected && !isCorrect -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surface
+                }
+                val border = if (isSelected && !revealed) {
+                    BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                } else {
+                    null
+                }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !revealed) { selectedIndex = index },
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
+                    border = border
+                ) {
+                    Text(
+                        text = choice,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
-            if (contentUrl.isNotBlank()) {
+
+            if (selectedIndex >= 0 && !revealed) {
+                Button(
+                    onClick = { revealed = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Check Answer")
+                }
+            }
+
+            if (revealed) {
+                val correct = selectedIndex == quiz.correctIndex
                 Text(
-                    text = "Tap to open video",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = if (correct) {
+                        "✓ Correct!"
+                    } else {
+                        "✗ Incorrect. Correct answer: ${quiz.choices.getOrNull(quiz.correctIndex) ?: ""}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (correct) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
+    } else {
+        // Fall back to plain text when the body isn't valid quiz JSON
+        Text(
+            text = body.ifBlank { "No quiz content available." },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
