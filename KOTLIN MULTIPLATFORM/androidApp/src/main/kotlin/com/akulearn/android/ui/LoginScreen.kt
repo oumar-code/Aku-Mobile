@@ -197,5 +197,3 @@ private fun LoginScreenPreview() {
         )
     }
 }
-
-
