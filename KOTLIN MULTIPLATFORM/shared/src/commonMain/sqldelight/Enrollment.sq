@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS dbEnrollment (
+    id TEXT NOT NULL PRIMARY KEY,
+    courseId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    enrolledAt TEXT NOT NULL,
+    progressPercent INTEGER NOT NULL DEFAULT 0,
+    completedLessons INTEGER NOT NULL DEFAULT 0,
+    completedAt TEXT
+);
+
+selectAll:
+SELECT * FROM dbEnrollment;
+
+selectByCourseId:
+SELECT * FROM dbEnrollment WHERE courseId = ?;
+
+insertEnrollment:
+INSERT OR REPLACE INTO dbEnrollment VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM dbEnrollment;

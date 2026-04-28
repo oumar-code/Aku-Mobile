@@ -26,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -71,6 +72,7 @@ fun LessonPlayerScreen(
     uiState: LessonPlayerUiState,
     onMarkComplete: () -> Unit,
     onErrorDismissed: () -> Unit,
+    onPositionChanged: (positionMs: Long, durationMs: Long) -> Unit = { _, _ -> },
     onBack: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -109,94 +111,111 @@ fun LessonPlayerScreen(
             if (lesson == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Title
-                    Text(
-                        text = lesson.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Lesson-level progress bar (thin, beneath the top bar)
+                    LinearProgressIndicator(
+                        progress = { uiState.playbackFraction },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = if (uiState.isCompleted)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.tertiary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                    if (lesson.durationMinutes > 0) {
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Title
                         Text(
-                            text = "${lesson.durationMinutes} min",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            text = lesson.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
-
-                    // Content by type
-                    when (lesson.contentType) {
-                        LessonContentType.VIDEO -> {
-                            if (lesson.contentUrl.isNotBlank()) {
-                                VideoPlayer(contentUrl = lesson.contentUrl)
-                            }
-                            if (lesson.body.isNotBlank()) {
-                                Text(
-                                    text = lesson.body,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                        LessonContentType.QUIZ -> {
-                            QuizContent(body = lesson.body)
-                        }
-                        else -> {
-                            val body = lesson.body.ifBlank { lesson.description }
-                            if (body.isNotBlank()) {
-                                Text(
-                                    text = body,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            } else {
-                                Text(
-                                    text = "No content available for this lesson.",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Mark Complete button
-                    if (uiState.isCompleted) {
-                        OutlinedButton(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = false
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                        if (lesson.durationMinutes > 0) {
+                            Text(
+                                text = "${lesson.durationMinutes} min",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.outline
                             )
-                            Text("  Lesson Completed", color = MaterialTheme.colorScheme.primary)
                         }
-                    } else {
-                        Button(
-                            onClick = onMarkComplete,
-                            enabled = !uiState.isMarkingComplete,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            if (uiState.isMarkingComplete) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
+
+                        // Content by type
+                        when (lesson.contentType) {
+                            LessonContentType.VIDEO -> {
+                                if (lesson.contentUrl.isNotBlank()) {
+                                    VideoPlayer(
+                                        contentUrl = lesson.contentUrl,
+                                        resumePositionMs = uiState.resumePositionMs,
+                                        onPositionChanged = onPositionChanged
+                                    )
+                                }
+                                if (lesson.body.isNotBlank()) {
+                                    Text(
+                                        text = lesson.body,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                            LessonContentType.QUIZ -> {
+                                QuizContent(body = lesson.body)
+                            }
+                            else -> {
+                                val body = lesson.body.ifBlank { lesson.description }
+                                if (body.isNotBlank()) {
+                                    Text(
+                                        text = body,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                } else {
+                                    Text(
+                                        text = "No content available for this lesson.",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Mark Complete button
+                        if (uiState.isCompleted) {
+                            OutlinedButton(
+                                onClick = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = false
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                            } else {
-                                Text("Mark as Complete")
+                                Text("  Lesson Completed", color = MaterialTheme.colorScheme.primary)
+                            }
+                        } else {
+                            Button(
+                                onClick = onMarkComplete,
+                                enabled = !uiState.isMarkingComplete,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                if (uiState.isMarkingComplete) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    Text("Mark as Complete")
+                                }
                             }
                         }
                     }
@@ -206,20 +225,48 @@ fun LessonPlayerScreen(
     }
 }
 
-/** Plays [contentUrl] in-app using Media3 ExoPlayer. */
+/** Plays [contentUrl] in-app using Media3 ExoPlayer, resuming from [resumePositionMs]. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-private fun VideoPlayer(contentUrl: String) {
+private fun VideoPlayer(
+    contentUrl: String,
+    resumePositionMs: Long = 0L,
+    onPositionChanged: (positionMs: Long, durationMs: Long) -> Unit = { _, _ -> }
+) {
     val context = LocalContext.current
     val exoPlayer = remember(contentUrl) {
         ExoPlayer.Builder(context).build().also { player ->
             player.setMediaItem(MediaItem.fromUri(contentUrl))
             player.prepare()
+            if (resumePositionMs > 0L) {
+                player.seekTo(resumePositionMs)
+            }
+            player.playWhenReady = false
         }
     }
-    DisposableEffect(exoPlayer) {
-        onDispose { exoPlayer.release() }
+
+    // Poll position every second while the player is active to get accurate progress.
+    LaunchedEffect(exoPlayer) {
+        while (true) {
+            val duration = exoPlayer.duration.takeIf { it > 0L }
+            if (duration != null) {
+                onPositionChanged(exoPlayer.currentPosition, duration)
+            }
+            kotlinx.coroutines.delay(1_000L)
+        }
     }
+
+    DisposableEffect(exoPlayer) {
+        onDispose {
+            // Persist final position before releasing
+            val duration = exoPlayer.duration.takeIf { it > 0L }
+            if (duration != null) {
+                onPositionChanged(exoPlayer.currentPosition, duration)
+            }
+            exoPlayer.release()
+        }
+    }
+
     AndroidView(
         factory = { ctx ->
             PlayerView(ctx).apply {
@@ -343,7 +390,8 @@ private fun LessonPlayerScreenPreview() {
                     description = "Learn the basics",
                     body = "# Welcome\n\nThis lesson covers the basics of Kotlin programming.",
                     durationMinutes = 15
-                )
+                ),
+                playbackFraction = 0.45f
             ),
             onMarkComplete = {},
             onErrorDismissed = {},

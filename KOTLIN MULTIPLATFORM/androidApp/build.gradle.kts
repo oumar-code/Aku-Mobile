@@ -28,6 +28,27 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Release signing: supply these environment variables in CI or locally.
+            // Set KEYSTORE_FILE to the path of your .jks / .keystore file.
+            // If the variables are absent the build falls back to the debug key (local only).
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            if (keystoreFile != null) {
+                val storePassword = requireNotNull(System.getenv("KEYSTORE_PASSWORD")) {
+                    "KEYSTORE_FILE is set but KEYSTORE_PASSWORD is missing"
+                }
+                val keyAlias = requireNotNull(System.getenv("KEY_ALIAS")) {
+                    "KEYSTORE_FILE is set but KEY_ALIAS is missing"
+                }
+                val keyPassword = requireNotNull(System.getenv("KEY_PASSWORD")) {
+                    "KEYSTORE_FILE is set but KEY_PASSWORD is missing"
+                }
+                signingConfig = signingConfigs.create("release").also { cfg ->
+                    cfg.storeFile = file(keystoreFile)
+                    cfg.storePassword = storePassword
+                    cfg.keyAlias = keyAlias
+                    cfg.keyPassword = keyPassword
+                }
+            }
         }
     }
 
