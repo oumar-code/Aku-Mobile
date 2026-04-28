@@ -18,9 +18,6 @@ val androidModule: Module = module {
     // Use the environment-specific base URL injected at build time; fall back to the
     // hard-coded production URL when the env var is absent (local/debug builds).
     single(override = true) {
-        Wave3ApiClient(
-            baseUrl = BuildConfig.WAVE3_BASE_URL.takeIf { it.isNotBlank() }
-                ?: Wave3ApiClient.BASE_URL
-        )
+        Wave3ApiClient(baseUrl = BuildConfig.WAVE3_BASE_URL.ifBlank { Wave3ApiClient.BASE_URL })
     }
 }

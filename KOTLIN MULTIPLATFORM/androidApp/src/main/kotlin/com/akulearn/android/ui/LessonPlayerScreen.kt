@@ -249,8 +249,13 @@ private fun QuizContent(body: String) {
     val quiz = remember(body) {
         try {
             Json { ignoreUnknownKeys = true }.decodeFromString(QuizQuestion.serializer(), body)
-                .takeIf { it.question.isNotBlank() && it.choices.isNotEmpty() }
-        } catch (_: Exception) {
+                .takeIf {
+                    it.question.isNotBlank() &&
+                        it.choices.isNotEmpty() &&
+                        it.correctIndex in it.choices.indices
+                }
+        } catch (e: Exception) {
+            android.util.Log.w("QuizContent", "Failed to parse quiz JSON: ${e.message}")
             null
         }
     }
