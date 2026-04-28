@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -111,4 +112,8 @@ dependencies {
     implementation("io.insert-koin:koin-android:3.5.6")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Firebase BOM — pin all Firebase library versions consistently
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 }
