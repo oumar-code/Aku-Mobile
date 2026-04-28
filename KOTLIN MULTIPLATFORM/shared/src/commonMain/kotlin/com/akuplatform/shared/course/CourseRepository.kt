@@ -8,6 +8,7 @@ import com.akuplatform.shared.course.model.Certificate
 import com.akuplatform.shared.course.model.Course
 import com.akuplatform.shared.course.model.Enrollment
 import com.akuplatform.shared.course.model.Lesson
+import com.akuplatform.shared.course.progress.LessonProgressStorage
 
 /**
  * High-level repository for course content.
@@ -17,14 +18,21 @@ import com.akuplatform.shared.course.model.Lesson
  *
  * Auth tokens are retrieved lazily from [SessionManager] so the caller never
  * needs to manage tokens directly.
+ *
+ * @param progressStorage Optional local progress store. When provided, lesson completion
+ *                        is persisted locally in addition to being reported to the API.
  */
 class CourseRepository(
     private val apiClient: Wave3ApiClient,
     private val sessionManager: SessionManager,
-    private val cache: CourseCache = InMemoryCourseCache()
+    private val cache: CourseCache = InMemoryCourseCache(),
+    private val progressStorage: LessonProgressStorage? = null
 ) {
 
     private suspend fun token(): String? = sessionManager.getToken()?.accessToken
+
+    /** Returns the current user's ID from the active session token (best-effort). */
+    private suspend fun userId(): String = sessionManager.getToken()?.accessToken?.take(16) ?: "default"
 
     /**
      * Returns the full courses catalogue.
@@ -54,9 +62,28 @@ class CourseRepository(
         apiClient.enrollInCourse(courseId = courseId, token = token())
             .also { if (it.isSuccess) cache.invalidate() }
 
-    /** Marks a lesson as complete for the current user. */
+    /**
+     * Marks a lesson as complete.
+     *
+     * Reports the completion to the API and, on success, also persists the record
+     * locally via [progressStorage] so the UI can reflect completion state without
+     * an additional network round-trip.
+     */
     suspend fun markLessonComplete(lessonId: String): Result<Unit> =
         apiClient.markLessonComplete(lessonId = lessonId, token = token())
+            .also { result ->
+                if (result.isSuccess) {
+                    progressStorage?.markComplete(userId(), lessonId)
+                }
+            }
+
+    /**
+     * Returns the set of lesson IDs locally marked complete for the current user.
+     *
+     * Falls back to an empty set when no [progressStorage] is configured.
+     */
+    suspend fun getCompletedLessons(): Set<String> =
+        progressStorage?.getCompletedLessonIds(userId()) ?: emptySet()
 
     /**
      * Searches courses by [query].
@@ -75,6 +102,22 @@ class CourseRepository(
             )
         }
         return apiClient.searchCourses(query = query, token = token())
+    }
+
+    /**
+     * Filters courses by [category].
+     * Uses client-side filtering when the catalogue is cached;
+     * falls back to fetching all courses and filtering otherwise.
+     */
+    suspend fun filterCourses(category: String): Result<List<Course>> {
+        val source = cache.getCourses() ?: return getCourses().map { courses ->
+            if (category.isBlank()) courses
+            else courses.filter { it.category.lowercase() == category.trim().lowercase() }
+        }
+        return Result.success(
+            if (category.isBlank()) source
+            else source.filter { it.category.lowercase() == category.trim().lowercase() }
+        )
     }
 
     /** Returns the current user's certificates. */
