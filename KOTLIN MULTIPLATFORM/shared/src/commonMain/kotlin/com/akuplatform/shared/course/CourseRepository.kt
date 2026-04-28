@@ -31,8 +31,14 @@ class CourseRepository(
 
     private suspend fun token(): String? = sessionManager.getToken()?.accessToken
 
-    /** Returns the current user's ID from the active session token (best-effort). */
-    private suspend fun userId(): String = sessionManager.getToken()?.accessToken?.take(16) ?: "default"
+    /** Returns the current user's ID from the active session token (best-effort).
+     *  Falls back to "default" for single-user installations; callers requiring a stable
+     *  per-account key should pass the resolved userId from a profile API response. */
+    private suspend fun userId(): String {
+        val token = sessionManager.getToken()?.accessToken ?: return "default"
+        // Derive a stable, anonymous bucket key from the token without leaking token contents.
+        return token.hashCode().toString()
+    }
 
     /**
      * Returns the full courses catalogue.

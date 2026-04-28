@@ -19,7 +19,8 @@ class AndroidLessonProgressStorage(private val context: Context) : LessonProgres
 
     private fun prefs(userId: String) = EncryptedSharedPreferences.create(
         context,
-        "aku_progress_${userId.take(24)}",
+        // Hash the userId so that path-traversal characters and very long IDs are not an issue.
+        "aku_progress_${userId.hashCode().toUInt()}",
         MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build(),
