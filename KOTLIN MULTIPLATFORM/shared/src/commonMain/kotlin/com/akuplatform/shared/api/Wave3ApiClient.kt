@@ -1,6 +1,8 @@
 package com.akuplatform.shared.api
 
 import com.akuplatform.shared.auth.model.AuthToken
+import com.akuplatform.shared.auth.model.UserProfile
+import com.akuplatform.shared.course.model.Certificate
 import com.akuplatform.shared.course.model.Course
 import com.akuplatform.shared.course.model.Enrollment
 import com.akuplatform.shared.course.model.Lesson
@@ -42,6 +44,18 @@ private data class ForgotPasswordRequest(val email: String)
 
 @Serializable
 private data class EnrollRequest(@SerialName("course_id") val courseId: String)
+
+@Serializable
+private data class ChangePasswordRequest(
+    @SerialName("current_password") val currentPassword: String,
+    @SerialName("new_password") val newPassword: String
+)
+
+@Serializable
+private data class DeviceTokenRequest(
+    val token: String,
+    val platform: String
+)
 
 @Serializable
 internal data class TokenResponse(
@@ -177,6 +191,70 @@ class Wave3ApiClient(
                 contentType(ContentType.Application.Json)
                 bearerAuth(token)
                 setBody(EnrollRequest(courseId))
+            }.requireSuccess().body()
+        }
+
+    /** Marks a lesson as complete for the current user. */
+    suspend fun markLessonComplete(lessonId: String, token: String? = null): Result<Unit> =
+        safeCall {
+            httpClient.post("$baseUrl/lessons/$lessonId/complete") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(token)
+            }.requireSuccess()
+            Unit
+        }
+
+    /** Searches courses by query string; falls back to full list when [query] is blank. */
+    suspend fun searchCourses(query: String, token: String? = null): Result<List<Course>> =
+        safeCall {
+            httpClient.get("$baseUrl/courses?q=${query.trim()}") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    // ── user / profile API ────────────────────────────────────────────────────
+
+    suspend fun getProfile(token: String? = null): Result<UserProfile> =
+        safeCall {
+            httpClient.get("$baseUrl/users/me") {
+                bearerAuth(token)
+            }.requireSuccess().body()
+        }
+
+    suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        token: String? = null
+    ): Result<Unit> =
+        safeCall {
+            httpClient.post("$baseUrl/auth/change-password") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(token)
+                setBody(ChangePasswordRequest(currentPassword, newPassword))
+            }.requireSuccess()
+            Unit
+        }
+
+    suspend fun registerDeviceToken(
+        deviceToken: String,
+        platform: String,
+        token: String? = null
+    ): Result<Unit> =
+        safeCall {
+            httpClient.post("$baseUrl/users/me/device-tokens") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(token)
+                setBody(DeviceTokenRequest(deviceToken, platform))
+            }.requireSuccess()
+            Unit
+        }
+
+    // ── certificates API ─────────────────────────────────────────────────────
+
+    suspend fun getCertificates(token: String? = null): Result<List<Certificate>> =
+        safeCall {
+            httpClient.get("$baseUrl/users/me/certificates") {
+                bearerAuth(token)
             }.requireSuccess().body()
         }
 

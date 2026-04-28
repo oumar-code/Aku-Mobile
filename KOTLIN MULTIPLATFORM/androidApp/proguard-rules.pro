@@ -5,16 +5,33 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface class:
+# Preserve line numbers for crash reporting
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# Keep shared KMP data models (used by kotlinx.serialization)
+-keep class com.akuplatform.shared.** { *; }
+
+# Keep Ktor and OkHttp classes used by networking
+-dontwarn io.ktor.**
+-keep class io.ktor.** { *; }
+
+# Keep kotlinx.serialization runtime
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keep,includedescriptorclasses class com.akuplatform.**$$serializer { *; }
+-keepclassmembers class com.akuplatform.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.akuplatform.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Keep Koin
+-keep class org.koin.** { *; }
+
+# WebView JS interface
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile

@@ -2,6 +2,7 @@ package com.akuplatform.shared.auth
 
 import com.akuplatform.shared.api.Wave3ApiClient
 import com.akuplatform.shared.auth.model.AuthToken
+import com.akuplatform.shared.auth.model.UserProfile
 import kotlinx.coroutines.flow.StateFlow
 
 class AuthRepository(
@@ -50,4 +51,14 @@ class AuthRepository(
 
     suspend fun requestPasswordReset(email: String): Result<Unit> =
         apiClient.requestPasswordReset(email)
+
+    suspend fun getProfile(): Result<UserProfile> =
+        apiClient.getProfile(token = sessionManager.getToken()?.accessToken)
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
+        apiClient.changePassword(
+            currentPassword = currentPassword,
+            newPassword = newPassword,
+            token = sessionManager.getToken()?.accessToken
+        )
 }

@@ -1,5 +1,6 @@
 package com.akulearn.android.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.akuplatform.shared.course.model.Lesson
 
@@ -42,6 +46,7 @@ fun LessonsScreen(
     courseTitle: String,
     lessons: List<Lesson>,
     isLoading: Boolean,
+    onLessonClick: (Lesson) -> Unit = {},
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -81,7 +86,11 @@ fun LessonsScreen(
                             lessons.sortedBy { it.orderIndex },
                             key = { _, lesson -> lesson.id }
                         ) { index, lesson ->
-                            LessonRow(lesson = lesson, number = index + 1)
+                            LessonRow(
+                                lesson = lesson,
+                                number = index + 1,
+                                onClick = { onLessonClick(lesson) }
+                            )
                             Divider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
@@ -95,11 +104,20 @@ fun LessonsScreen(
  * A single row within a lesson list, shared by [LessonsScreen] and [CourseDetailScreen].
  */
 @Composable
-fun LessonRow(lesson: Lesson, number: Int? = null) {
-    Row(
-        modifier = Modifier
+fun LessonRow(lesson: Lesson, number: Int? = null, onClick: (() -> Unit)? = null) {
+    val rowModifier = if (onClick != null) {
+        Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Lesson: ${lesson.title}" }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    }
+    Row(
+        modifier = rowModifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -135,5 +153,21 @@ fun LessonRow(lesson: Lesson, number: Int? = null) {
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LessonsScreenPreview() {
+    MaterialTheme {
+        LessonsScreen(
+            courseTitle = "Kotlin Basics",
+            lessons = listOf(
+                Lesson(id = "1", courseId = "c1", title = "Introduction", durationMinutes = 10, isCompleted = true, orderIndex = 0),
+                Lesson(id = "2", courseId = "c1", title = "Variables", durationMinutes = 12, orderIndex = 1)
+            ),
+            isLoading = false,
+            onBack = {}
+        )
     }
 }
