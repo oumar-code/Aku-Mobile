@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,8 +27,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,25 +38,12 @@ import com.akuplatform.shared.course.model.Enrollment
 fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onBrowseCourses: () -> Unit,
-    onCourseClick: (String) -> Unit = {},
-    onProfile: () -> Unit = {},
-    onLogout: () -> Unit
+    onCourseClick: (String) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Akulearn") },
-                actions = {
-                    IconButton(
-                        onClick = onProfile,
-                        modifier = Modifier.semantics { contentDescription = "Profile" }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.AccountCircle,
-                            contentDescription = "Profile"
-                        )
-                    }
-                }
+                title = { Text("Akulearn") }
             )
         }
     ) { innerPadding ->
@@ -133,19 +115,7 @@ fun HomeScreen(
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Log Out")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
     }
 }
@@ -212,9 +182,7 @@ private fun HomeScreenPreview() {
                         Course(id = "c1", title = "Kotlin Basics", description = "", instructor = "Bob", lessonCount = 10, durationMinutes = 120)
                 )
             ),
-            onBrowseCourses = {},
-            onLogout = {}
+            onBrowseCourses = {}
         )
     }
 }
-
