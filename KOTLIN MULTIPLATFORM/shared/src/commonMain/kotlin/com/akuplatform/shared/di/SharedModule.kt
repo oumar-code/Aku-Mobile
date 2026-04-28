@@ -14,10 +14,13 @@ import org.koin.dsl.module
  * Koin module for shared (platform-agnostic) dependencies.
  *
  * Platform modules must provide a [TokenStorage] binding before including this module.
+ *
+ * @param baseUrl Optional API base URL override. Defaults to [Wave3ApiClient.BASE_URL].
+ *                Pass a blank string to use the default as well.
  */
-val sharedModule: Module = module {
+fun sharedModule(baseUrl: String = Wave3ApiClient.BASE_URL): Module = module {
     single { SessionManager(get()) }
-    single { Wave3ApiClient() }
+    single { Wave3ApiClient(baseUrl = baseUrl.ifBlank { Wave3ApiClient.BASE_URL }) }
     single { AuthRepository(get(), get()) }
     single<CourseCache> { InMemoryCourseCache() }
     single { CourseRepository(get(), get(), get()) }

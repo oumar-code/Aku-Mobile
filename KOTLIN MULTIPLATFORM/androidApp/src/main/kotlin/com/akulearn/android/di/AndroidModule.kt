@@ -1,5 +1,6 @@
 package com.akulearn.android.di
 
+import com.akulearn.android.BuildConfig
 import com.akulearn.android.auth.AndroidTokenStorage
 import com.akulearn.android.notifications.AndroidNotificationService
 import com.akuplatform.shared.auth.TokenStorage
@@ -10,7 +11,9 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val androidModule: Module = module {
-    includes(sharedModule)
+    // Pass the build-time base URL to the shared module; sharedModule falls back
+    // to the hard-coded production URL when the env var is absent (local/debug builds).
+    includes(sharedModule(BuildConfig.WAVE3_BASE_URL))
     single<TokenStorage> { AndroidTokenStorage(androidContext()) }
     single<NotificationService> { AndroidNotificationService(androidContext()) }
 }
