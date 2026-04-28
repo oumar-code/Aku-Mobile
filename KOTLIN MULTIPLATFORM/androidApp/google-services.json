@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "project_id": "YOUR_PROJECT_ID",
-    "storage_bucket": "YOUR_PROJECT_ID.appspot.com"
+    "project_number": "931681099337",
+    "project_id": "aku-mobile-743fb",
+    "storage_bucket": "aku-mobile-743fb.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_HASH",
+        "mobilesdk_app_id": "1:931681099337:android:2b3155734b3eacedf1e998",
         "android_client_info": {
           "package_name": "com.akuplatform.android"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_ANDROID_API_KEY"
+          "current_key": "AIzaSyBBkmcwuVvlvdjWqiBQ9Aczik-SgIpFBhQ"
         }
       ],
       "services": {
