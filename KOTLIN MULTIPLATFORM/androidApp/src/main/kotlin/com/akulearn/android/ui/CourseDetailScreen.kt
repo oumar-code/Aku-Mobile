@@ -21,6 +21,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -35,7 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.akuplatform.shared.course.model.Course
+import com.akuplatform.shared.course.model.Enrollment
 import com.akuplatform.shared.course.model.Lesson
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -151,6 +155,28 @@ fun CourseDetailScreen(
                                 )
                                 Text("  Enrolled — View Lessons")
                             }
+
+                            // Progress bar
+                            val progress = uiState.enrollment.progressPercent / 100f
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Progress",
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                                Text(
+                                    text = "${uiState.enrollment.progressPercent}%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         } else {
                             Button(
                                 onClick = onEnroll,
@@ -189,5 +215,29 @@ fun CourseDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CourseDetailScreenPreview() {
+    MaterialTheme {
+        CourseDetailScreen(
+            uiState = CourseDetailUiState(
+                course = Course(
+                    id = "1",
+                    title = "Kotlin for Beginners",
+                    description = "A comprehensive introduction to Kotlin.",
+                    instructor = "John Doe",
+                    lessonCount = 12,
+                    durationMinutes = 180
+                ),
+                enrollment = Enrollment(id = "e1", courseId = "1", userId = "u1", progressPercent = 40)
+            ),
+            onEnroll = {},
+            onEnrollmentErrorDismissed = {},
+            onViewLessons = {},
+            onBack = {}
+        )
     }
 }
