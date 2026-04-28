@@ -17,6 +17,26 @@ import com.akuplatform.shared.notifications.NotificationService
  *
  * On older Android versions notifications are implicitly granted, so both methods
  * return `true` without any OS interaction.
+ *
+ * For deep-link notifications see [DeepLinkHandler], which can post a notification
+ * with a [DeepLinkHandler.lessonUri] or [DeepLinkHandler.courseUri] target.
+ *
+ * ### Incoming notification payload handling
+ *
+ * When a data payload arrives (e.g. from FCM), parse it and forward to [DeepLinkHandler]:
+ *
+ * ```kotlin
+ * val lessonId = remoteMessage.data["lessonId"]
+ * val courseId = remoteMessage.data["courseId"]
+ * val title    = remoteMessage.data["title"] ?: "New lesson available"
+ * val body     = remoteMessage.data["body"]  ?: ""
+ * when {
+ *     lessonId != null -> DeepLinkHandler.postNotification(
+ *         context, title, body, DeepLinkHandler.lessonUri(lessonId))
+ *     courseId != null -> DeepLinkHandler.postNotification(
+ *         context, title, body, DeepLinkHandler.courseUri(courseId))
+ * }
+ * ```
  */
 class AndroidNotificationService(private val context: Context) : NotificationService {
 

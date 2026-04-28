@@ -52,16 +52,17 @@ class CourseRepositoryTest {
     private lateinit var storage: FakeTokenStorage
     private lateinit var sessionManager: SessionManager
     private lateinit var fakeCache: FakeCourseCache
+    private lateinit var fakeProgress: FakeLessonProgressStorage
 
     private val coursesJson = """
         [
-          {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240},
-          {"id":"c2","title":"Web Dev 101","description":"HTML, CSS, JS","instructor":"Prof. Jones","lesson_count":12,"duration_minutes":360}
+          {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240,"category":"Programming"},
+          {"id":"c2","title":"Web Dev 101","description":"HTML, CSS, JS","instructor":"Prof. Jones","lesson_count":12,"duration_minutes":360,"category":"Web"}
         ]
     """.trimIndent()
 
     private val courseJson = """
-        {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240}
+        {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240,"category":"Programming"}
     """.trimIndent()
 
     private val lessonsJson = """
@@ -105,6 +106,7 @@ class CourseRepositoryTest {
         storage = FakeTokenStorage(initialToken = validToken)
         sessionManager = SessionManager(storage)
         fakeCache = FakeCourseCache()
+        fakeProgress = FakeLessonProgressStorage()
     }
 
     @Test
@@ -193,5 +195,114 @@ class CourseRepositoryTest {
         assertIs<ApiError.Unauthorized>(result.exceptionOrNull())
         // Cache should still be intact
         assertNotNull(fakeCache.getCourses(), "cache should not be cleared on failed enrollment")
+    }
+
+    // ── Search & Filter Tests ─────────────────────────────────────────────────
+
+    @Test
+    fun `searchCourses returns all cached courses for blank query`() = runTest {
+        val seeded = listOf(
+            Course(id = "c1", title = "Python", description = "", instructor = "Smith"),
+            Course(id = "c2", title = "Kotlin", description = "", instructor = "Jones")
+        )
+        fakeCache.seed(seeded)
+        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val result = repo.searchCourses("")
+        assertTrue(result.isSuccess)
+        assertEquals(2, result.getOrThrow().size)
+    }
+
+    @Test
+    fun `searchCourses filters by title (case-insensitive)`() = runTest {
+        val seeded = listOf(
+            Course(id = "c1", title = "Intro to Python", description = "", instructor = "Smith"),
+            Course(id = "c2", title = "Advanced Kotlin", description = "", instructor = "Jones")
+        )
+        fakeCache.seed(seeded)
+        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val result = repo.searchCourses("python")
+        assertTrue(result.isSuccess)
+        val courses = result.getOrThrow()
+        assertEquals(1, courses.size)
+        assertEquals("c1", courses.first().id)
+    }
+
+    @Test
+    fun `searchCourses filters by instructor`() = runTest {
+        val seeded = listOf(
+            Course(id = "c1", title = "Python", description = "", instructor = "Dr Smith"),
+            Course(id = "c2", title = "Kotlin", description = "", instructor = "Prof Jones")
+        )
+        fakeCache.seed(seeded)
+        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val result = repo.searchCourses("smith")
+        assertTrue(result.isSuccess)
+        assertEquals(1, result.getOrThrow().size)
+        assertEquals("c1", result.getOrThrow().first().id)
+    }
+
+    @Test
+    fun `filterCourses returns all when category is blank`() = runTest {
+        val seeded = listOf(
+            Course(id = "c1", title = "Python", description = "", category = "Programming"),
+            Course(id = "c2", title = "Design", description = "", category = "Art")
+        )
+        fakeCache.seed(seeded)
+        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val result = repo.filterCourses("")
+        assertTrue(result.isSuccess)
+        assertEquals(2, result.getOrThrow().size)
+    }
+
+    @Test
+    fun `filterCourses narrows to exact category (case-insensitive)`() = runTest {
+        val seeded = listOf(
+            Course(id = "c1", title = "Python", description = "", category = "Programming"),
+            Course(id = "c2", title = "Design", description = "", category = "Art"),
+            Course(id = "c3", title = "Kotlin", description = "", category = "programming")
+        )
+        fakeCache.seed(seeded)
+        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val result = repo.filterCourses("Programming")
+        assertTrue(result.isSuccess)
+        val ids = result.getOrThrow().map { it.id }
+        assertEquals(2, ids.size)
+        assertTrue(ids.containsAll(listOf("c1", "c3")))
+    }
+
+    // ── Lesson Progress Tests ─────────────────────────────────────────────────
+
+    @Test
+    fun `markLessonComplete persists lesson id to progressStorage`() = runTest {
+        val repo = CourseRepository(
+            apiClient = clientWith(HttpStatusCode.OK, "{}"),
+            sessionManager = sessionManager,
+            cache = fakeCache,
+            progressStorage = fakeProgress
+        )
+        val result = repo.markLessonComplete("lesson-99")
+        assertTrue(result.isSuccess)
+        // The fake storage should now contain the lesson id for the token prefix user
+        val completed = repo.getCompletedLessons()
+        assertTrue(completed.contains("lesson-99"))
+    }
+
+    @Test
+    fun `markLessonComplete does not persist on API failure`() = runTest {
+        val repo = CourseRepository(
+            apiClient = clientWith(HttpStatusCode.InternalServerError, "{}"),
+            sessionManager = sessionManager,
+            cache = fakeCache,
+            progressStorage = fakeProgress
+        )
+        val result = repo.markLessonComplete("lesson-99")
+        assertTrue(result.isFailure)
+        assertTrue(repo.getCompletedLessons().isEmpty())
+    }
+
+    @Test
+    fun `getCompletedLessons returns empty set when no progressStorage`() = runTest {
+        val repo = CourseRepository(clientWith(HttpStatusCode.OK, "{}"), sessionManager, fakeCache)
+        assertTrue(repo.getCompletedLessons().isEmpty())
     }
 }

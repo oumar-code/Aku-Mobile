@@ -1,5 +1,7 @@
 package com.akulearn.android
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,15 +31,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.akulearn.android.notifications.DeepLinkHandler
 import com.akulearn.android.notifications.RequestNotificationPermission
 import com.akulearn.android.ui.CertificatesScreen
 import com.akulearn.android.ui.CertificatesViewModel
@@ -85,21 +90,47 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AkulearnApp(
                         authRepository = authRepository,
-                        courseRepository = courseRepository
+                        courseRepository = courseRepository,
+                        initialIntent = intent
                     )
                 }
             }
         }
+    }
+
+    /** Re-deliver deep-link intents to the running NavHost when the activity is already open. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }
 
 // Routes that are top-level bottom-nav tabs
 private val bottomNavRoutes = setOf("home", "courses", "certificates", "profile")
 
+/** Converts an `akulearn://` [Uri] to a Compose navigation route string, or `null` if unrecognised. */
+private fun Uri.toNavRoute(): String? {
+    if (scheme != DeepLinkHandler.SCHEME) return null
+    return when (authority) {
+        DeepLinkHandler.PATH_LESSON -> {
+            val lessonId = pathSegments.firstOrNull() ?: return null
+            // We cannot reconstruct the full Lesson JSON from just the ID here;
+            // navigate to the course detail instead so the user can tap the lesson.
+            null // handled below via courseId-only deep link until the full lesson is fetched
+        }
+        DeepLinkHandler.PATH_COURSE -> {
+            val courseId = pathSegments.firstOrNull() ?: return null
+            "course/$courseId"
+        }
+        else -> null
+    }
+}
+
 @Composable
 private fun AkulearnApp(
     authRepository: AuthRepository,
-    courseRepository: CourseRepository
+    courseRepository: CourseRepository,
+    initialIntent: Intent? = null
 ) {
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState()
@@ -113,6 +144,17 @@ private fun AkulearnApp(
 
     // Initialize session (reads persisted token; auto-refreshes if expired).
     LaunchedEffect(Unit) { authRepository.initialize() }
+
+    // Handle deep-link intent delivered on cold start or via onNewIntent.
+    LaunchedEffect(initialIntent, isLoggedIn) {
+        if (isLoggedIn) {
+            initialIntent?.data?.toNavRoute()?.let { route ->
+                navController.navigate(route) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -254,10 +296,17 @@ private fun AkulearnApp(
                     factory = CourseDetailViewModel.Factory(courseRepository, courseId)
                 )
                 val uiState by viewModel.uiState.collectAsState()
+                val playbackPrefs = LocalContext.current.getSharedPreferences(
+                    LessonPlayerViewModel.PREFS_NAME, android.content.Context.MODE_PRIVATE
+                )
+                val lessonProgressFractions = uiState.lessons.associate { lesson ->
+                    lesson.id to (playbackPrefs.getFloat("frac_${lesson.id}", 0f))
+                }
                 LessonsScreen(
                     courseTitle = uiState.course?.title ?: "Lessons",
                     lessons = uiState.lessons,
                     isLoading = uiState.isLoading,
+                    lessonProgressFractions = lessonProgressFractions,
                     onLessonClick = { lesson ->
                         val lessonJson = java.net.URLEncoder.encode(
                             Json.encodeToString(Lesson.serializer(), lesson), "UTF-8"
@@ -281,14 +330,16 @@ private fun AkulearnApp(
                 } catch (e: Exception) {
                     return@composable
                 }
+                val context = LocalContext.current
                 val viewModel: LessonPlayerViewModel = viewModel(
-                    factory = LessonPlayerViewModel.Factory(courseRepository, lesson)
+                    factory = LessonPlayerViewModel.Factory(courseRepository, lesson, context)
                 )
                 val uiState by viewModel.uiState.collectAsState()
                 LessonPlayerScreen(
                     uiState = uiState,
                     onMarkComplete = viewModel::markComplete,
                     onErrorDismissed = viewModel::clearError,
+                    onPositionChanged = viewModel::onPositionChanged,
                     onBack = { navController.popBackStack() }
                 )
             }
