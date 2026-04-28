@@ -82,6 +82,10 @@ dependencies {
     // Serialization (required for Json encode/decode in navigation)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
 
+    // Media3 ExoPlayer — in-app video playback for lesson player
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+
     // Dependency injection
     implementation("io.insert-koin:koin-android:3.5.6")
 

@@ -17,6 +17,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +47,7 @@ fun ProfileScreen(
     uiState: ProfileUiState,
     onErrorDismissed: () -> Unit,
     onSettings: () -> Unit,
+    onLogout: () -> Unit,
     onBack: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -144,6 +147,17 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             ProfileRow(label = "Member since", value = uiState.profile.joinedAt.take(10))
                         }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = onLogout,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Log Out")
+                        }
                     }
                 }
 
@@ -196,6 +210,7 @@ private fun ProfileScreenPreview() {
             ),
             onErrorDismissed = {},
             onSettings = {},
+            onLogout = {},
             onBack = {}
         )
     }

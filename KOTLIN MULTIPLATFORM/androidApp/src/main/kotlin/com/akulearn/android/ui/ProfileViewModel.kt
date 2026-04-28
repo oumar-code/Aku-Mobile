@@ -44,6 +44,13 @@ class ProfileViewModel(private val authRepository: AuthRepository) : ViewModel()
         }
     }
 
+    fun logout(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.logout()
+            onComplete()
+        }
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
