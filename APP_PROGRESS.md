@@ -14,10 +14,11 @@
 4. [Sprint 1 — Foundation & Core](#sprint-1--foundation--core)
 5. [Sprint 2 — Course & Content](#sprint-2--course--content)
 6. [Sprint 3 — UX Polish & Platform Features](#sprint-3--ux-polish--platform-features)
-7. [Current Feature Status](#current-feature-status)
-8. [CI/CD Pipeline](#cicd-pipeline)
-9. [Test Coverage](#test-coverage)
-10. [Next-Sprint Backlog](#next-sprint-backlog)
+7. [Sprint 4 — Offline Cache, Progress Tracking & Deep-Linking](#sprint-4--offline-cache-progress-tracking--deep-linking)
+8. [Current Feature Status](#current-feature-status)
+9. [CI/CD Pipeline](#cicd-pipeline)
+10. [Test Coverage](#test-coverage)
+11. [Next-Sprint Backlog](#next-sprint-backlog)
 
 ---
 
@@ -45,9 +46,12 @@ repository to keep all mobile development in one place.
 | Dependency injection | Koin (`sharedModule` + `androidModule`) |
 | Token storage — Android | `EncryptedSharedPreferences` (AES-256-GCM, Android Keystore) |
 | Token storage — iOS | System Keychain (`IosTokenStorage`) |
-| Video playback — Android | ExoPlayer (Media3) |
-| Notifications — Android | `AndroidNotificationService` (POST_NOTIFICATIONS, Android 13+) |
+| Offline course cache | SQLDelight 2.0.2 (`SqlDelightCourseCache`, 5-min TTL) |
+| Lesson progress storage — Android | `EncryptedSharedPreferences` (`AndroidLessonProgressStorage`) |
+| Video playback — Android | ExoPlayer (Media3) with resume-position |
+| Notifications — Android | `AndroidNotificationService` + `DeepLinkHandler` |
 | Notifications — iOS | `IosNotificationService` (`UNUserNotificationCenter`) |
+| Deep-linking | Custom URI scheme `akulearn://lesson/{id}` & `akulearn://course/{id}` |
 | CI/CD | GitHub Actions |
 | Build system | Gradle (Kotlin DSL) + version catalog (`libs.versions.toml`) |
 
@@ -205,6 +209,54 @@ Aku-Mobile/
 
 ---
 
+## Sprint 4 — Offline Cache, Progress Tracking & Deep-Linking
+
+### SQLDelight Offline Cache
+- [x] SQLDelight 2.0.2 added to version catalog, root `build.gradle.kts`, `settings.gradle.kts`, and `shared/build.gradle.kts`
+- [x] `.sq` schema files created: `Course.sq`, `Lesson.sq`, `Enrollment.sq`
+- [x] `SqlDelightCourseCache` replaces `InMemoryCourseCache` in `SharedModule`
+- [x] `DatabaseDriverFactory` interface in `shared/commonMain`
+- [x] `AndroidDatabaseDriverFactory` in `shared/androidMain`
+- [x] `IosDatabaseDriverFactory` stub in `shared/iosMain`
+- [x] `AndroidModule` binds `DatabaseDriverFactory` and `LessonProgressStorage`
+
+### Lesson Progress Tracking
+- [x] `LessonProgress` model in `shared/commonMain/course/model/`
+- [x] `LessonProgressStorage` interface in `shared/commonMain/course/progress/`
+- [x] `AndroidLessonProgressStorage` backed by `EncryptedSharedPreferences`
+- [x] `CourseRepository.markLessonComplete` now also persists locally via `LessonProgressStorage`
+- [x] `CourseRepository.getCompletedLessons()` returns local completion set
+- [x] `LessonPlayerViewModel` auto-marks complete at ≥ 90 % video playback
+- [x] `LessonsScreen` shows per-lesson `LinearProgressIndicator`
+
+### Lesson Progress Bar & Resume Position
+- [x] `LessonPlayerViewModel` persists playback position + fraction to `SharedPreferences`
+- [x] `ExoPlayer` seeks to saved position on re-open
+- [x] `LessonPlayerScreen` shows a `LinearProgressIndicator` beneath the top bar
+- [x] `LessonsScreen` reads saved fractions from `SharedPreferences` and displays per-lesson bars
+
+### Course Search & Filter
+- [x] `searchCourses(query)` already existed; confirmed client-side filtering covers title + instructor
+- [x] `filterCourses(category)` added to `CourseRepository` (client-side; falls back to full fetch)
+- [x] `CoursesScreen` search bar and duration filter chips already in place
+
+### Push Notification Deep-Linking
+- [x] `DeepLinkHandler` utility object added: `akulearn://lesson/{id}` + `akulearn://course/{id}` URIs
+- [x] `AndroidManifest.xml` updated with `akulearn://` intent-filter and `singleTop` launch mode
+- [x] `MainActivity.onNewIntent` re-delivers deep-link intents to the running NavHost
+- [x] `AndroidNotificationService` documented for FCM payload → `DeepLinkHandler.postNotification` wiring
+- [x] `AndroidModule` updated with new bindings
+
+### Release APK Signing
+- [x] `androidApp/build.gradle.kts` signing config block added (env-var driven: `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`)
+
+### Expanded Test Coverage
+- [x] `FakeLessonProgressStorage` test double in `commonTest`
+- [x] `LessonProgressTest` — 8 tests covering all `LessonProgressStorage` contract scenarios
+- [x] `CourseRepositoryTest` — extended with search (title, instructor), `filterCourses` (blank, category-match), and lesson-progress persistence/failure tests
+
+---
+
 ## Current Feature Status
 
 ### Authentication
@@ -229,7 +281,12 @@ Aku-Mobile/
 | Enrolment | ✅ | ✅ |
 | Lesson video player | ✅ | ⏳ (next sprint) |
 | In-lesson quiz UI | ✅ | ⏳ (next sprint) |
-| In-memory course cache (5-min TTL) | ✅ | ✅ |
+| SQLDelight offline cache (5-min TTL) | ✅ | ✅ (stub) |
+| Lesson completion tracking (local) | ✅ | ⏳ |
+| Resume from last position | ✅ | ⏳ |
+| Per-lesson progress bar | ✅ | ⏳ |
+| Course search | ✅ | ✅ |
+| Course filter by category/duration | ✅ | ✅ |
 
 ### User Profile & Settings
 
@@ -248,12 +305,15 @@ Aku-Mobile/
 | Splash screen | ✅ | ⏳ |
 | Onboarding pager | ✅ | ⏳ |
 
-### Notifications
+### Notifications & Deep-Linking
 
 | Feature | Android | iOS |
 |---|---|---|
 | Push permission request | ✅ | ✅ |
 | Notification service abstraction | ✅ | ✅ |
+| Deep-link `akulearn://lesson/{id}` | ✅ | ⏳ |
+| Deep-link `akulearn://course/{id}` | ✅ | ⏳ |
+| FCM payload → deep-link notification | 🔧 ready | ⏳ |
 
 ---
 
@@ -279,6 +339,7 @@ every pull request.
     └─► [release-apk]  (only on `v*` tags)
             ./gradlew :androidApp:assembleRelease
             Publishes release APK to GitHub Releases
+            (Requires KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD secrets)
 ```
 
 ---
@@ -293,7 +354,8 @@ Tests live in `shared/src/commonTest/` and run on the JVM host via `./gradlew :s
 | `SessionManagerTest` | `auth` | `StateFlow` session state, token restore |
 | `Wave3ApiClientTest` | `api` | HTTP request construction, error mapping |
 | `AuthTokenTest` | `auth/model` | Token expiry logic |
-| `CourseRepositoryTest` | `course` | Catalogue fetch, enrolment, cache invalidation |
+| `CourseRepositoryTest` | `course` | Catalogue fetch, enrolment, cache, search/filter, progress |
+| `LessonProgressTest` | `course` | `LessonProgressStorage` contract (8 test cases) |
 
 ---
 
@@ -302,9 +364,6 @@ Tests live in `shared/src/commonTest/` and run on the JVM host via `./gradlew :s
 - [ ] iOS lesson video player (AVPlayer integration)
 - [ ] iOS quiz UI (inline quiz card after video)
 - [ ] iOS profile, settings, and certificates screens
-- [ ] Lesson progress tracking (persist completed lessons per user)
-- [ ] SQLDelight offline content cache (replace in-memory cache with persistent storage)
-- [ ] Push notification payloads (deep-link into specific lessons)
-- [ ] Course search and filter
-- [ ] Lesson progress bar and resume-from-last-position
-- [ ] Release first versioned APK (`v0.1.0` tag → release job)
+- [ ] iOS splash & onboarding pager
+- [ ] FCM `google-services.json` + `AkuFirebaseMessagingService` wiring
+- [ ] Release `v0.1.0` tag → verify CI release job produces signed APK
