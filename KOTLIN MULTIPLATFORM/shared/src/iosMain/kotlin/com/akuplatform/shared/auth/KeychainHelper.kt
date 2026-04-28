@@ -1,5 +1,6 @@
 package com.akuplatform.shared.auth
 
+import kotlinx.cinterop.CValuesRef
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -21,7 +22,6 @@ import platform.Foundation.dataUsingEncoding
 import platform.Security.SecItemAdd
 import platform.Security.SecItemCopyMatching
 import platform.Security.SecItemDelete
-import platform.Security.SecItemUpdate
 import platform.Security.errSecDuplicateItem
 import platform.Security.errSecSuccess
 import platform.Security.kSecAttrAccount
@@ -99,7 +99,7 @@ internal class KeychainHelper(
     }
 
     private class QueryBuilder(private val dict: CFMutableDictionaryRef?) {
-        fun addEntry(key: CFStringRef?, value: Any?) {
+        fun addEntry(key: CFStringRef?, value: CValuesRef<*>?) {
             platform.CoreFoundation.CFDictionaryAddValue(dict, key, value)
         }
     }
