@@ -23,10 +23,14 @@ import org.koin.dsl.module
  * @param baseUrl Optional API base URL override. Defaults to [Wave3ApiClient.BASE_URL].
  *                Pass a blank string to use the default as well.
  */
-fun sharedModule(baseUrl: String = Wave3ApiClient.BASE_URL): Module = module {
+fun sharedModule(
+    baseUrl: String = Wave3ApiClient.BASE_URL,
+    supabaseUrl: String = "",
+    supabaseAnonKey: String = ""
+): Module = module {
     single { SessionManager(get()) }
     single { Wave3ApiClient(baseUrl = baseUrl.ifBlank { Wave3ApiClient.BASE_URL }) }
-    single { AuthRepository(get(), get()) }
+    single { AuthRepository(get(), supabaseUrl, supabaseAnonKey) }
     single<CourseCache> { SqlDelightCourseCache(get<DatabaseDriverFactory>()) }
     single {
         CourseRepository(

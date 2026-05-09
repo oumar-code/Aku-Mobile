@@ -12,10 +12,12 @@ struct AkuApp: App {
     private let notificationService = IosNotificationService()
 
     init() {
+        let environment = ProcessInfo.processInfo.environment
         sessionManager = SessionManager(tokenStorage: tokenStorage)
         authRepository = AuthRepository(
             sessionManager: sessionManager,
-            apiClient: Wave3ApiClient()
+            supabaseUrl: environment["SUPABASE_URL"] ?? "",
+            supabaseAnonKey: environment["SUPABASE_ANON_KEY"] ?? ""
         )
         courseRepository = CourseRepository(
             apiClient: Wave3ApiClient(),
