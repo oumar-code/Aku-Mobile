@@ -14,6 +14,8 @@ import kotlin.test.assertTrue
 
 class AuthRepositoryTest {
 
+    private val testProfileStreakDays = 4
+
     private lateinit var storage: FakeTokenStorage
     private lateinit var sessionManager: SessionManager
 
@@ -157,7 +159,12 @@ class AuthRepositoryTest {
 
     @Test
     fun `getProfile delegates to auth provider`() = runTest {
-        val profile = UserProfile(id = "user-1", name = "Test User", email = "user@example.com", streakDays = 4)
+        val profile = UserProfile(
+            id = "user-1",
+            name = "Test User",
+            email = "user@example.com",
+            streakDays = testProfileStreakDays
+        )
         val repo = AuthRepository(
             sessionManager,
             FakeAuthProviderService(profile = profile)

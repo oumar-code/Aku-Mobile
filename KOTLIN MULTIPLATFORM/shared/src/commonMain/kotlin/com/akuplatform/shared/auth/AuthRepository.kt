@@ -135,6 +135,13 @@ internal class SupabaseAuthProviderService(
     private val client: SupabaseClient
 ) : AuthProviderService {
 
+    /**
+     * Supabase may have a locally cached user on warm app flows, but after restoring a
+     * persisted token we may only have a session until the user is fetched again.
+     */
+    private suspend fun currentUser(): UserInfo =
+        client.auth.currentUserOrNull() ?: client.auth.retrieveUserForCurrentSession(updateSession = true)
+
     override suspend fun importSession(token: AuthToken) {
         client.auth.importSession(token.toUserSession(), autoRefresh = true)
     }
@@ -172,7 +179,7 @@ internal class SupabaseAuthProviderService(
     }
 
     override suspend fun changePassword(currentPassword: String, newPassword: String): AuthToken? {
-        val currentUser = client.auth.currentUserOrNull() ?: client.auth.retrieveUserForCurrentSession(updateSession = true)
+        val currentUser = currentUser()
         val email = currentUser.email ?: throw ApiError.Unauthorized("No email is available for this account.")
 
         client.auth.signInWith(Email) {
@@ -186,8 +193,7 @@ internal class SupabaseAuthProviderService(
     }
 
     override suspend fun getProfile(): UserProfile {
-        val user = client.auth.currentUserOrNull() ?: client.auth.retrieveUserForCurrentSession(updateSession = true)
-        return user.toUserProfile()
+        return currentUser().toUserProfile()
     }
 
     override suspend fun signOut() {
@@ -248,5 +254,5 @@ private fun Throwable.toApiError(): Throwable = when (this) {
         else -> ApiError.ServerError(statusCode, message ?: "Supabase request failed.")
     }
     is HttpRequestException -> ApiError.Network(message ?: "Network error.")
-    else -> ApiError.Network(message ?: "Unexpected auth error.")
+    else -> ApiError.ServerError(500, message ?: "Unexpected auth error.")
 }
