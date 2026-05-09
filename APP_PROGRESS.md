@@ -40,10 +40,11 @@ repository to keep all mobile development in one place.
 | Shared business logic | Kotlin Multiplatform (KMP) |
 | Android UI | Jetpack Compose + Material 3 |
 | iOS UI | SwiftUI |
-| Networking | Ktor (multiplatform HTTP client) |
+| Networking | Ktor (multiplatform HTTP client) + Supabase Postgrest |
 | Serialisation | kotlinx.serialization |
 | Async | kotlinx.coroutines + `StateFlow` |
-| Dependency injection | Koin (`sharedModule` + `androidModule`) |
+| Dependency injection | Koin 4.0.0 (`sharedModule` + `androidModule`) |
+| Backend | Supabase (Auth / GoTrue, Postgrest, Storage) |
 | Token storage — Android | `EncryptedSharedPreferences` (AES-256-GCM, Android Keystore) |
 | Token storage — iOS | System Keychain (`IosTokenStorage`) |
 | Offline course cache | SQLDelight 2.0.2 (`SqlDelightCourseCache`, 5-min TTL) |
@@ -211,6 +212,8 @@ Aku-Mobile/
 
 ## Sprint 4 — Offline Cache, Progress Tracking & Deep-Linking
 
+> **Status: ✅ Complete**
+
 ### SQLDelight Offline Cache
 - [x] SQLDelight 2.0.2 added to version catalog, root `build.gradle.kts`, `settings.gradle.kts`, and `shared/build.gradle.kts`
 - [x] `.sq` schema files created: `Course.sq`, `Lesson.sq`, `Enrollment.sq`
@@ -254,6 +257,55 @@ Aku-Mobile/
 - [x] `FakeLessonProgressStorage` test double in `commonTest`
 - [x] `LessonProgressTest` — 8 tests covering all `LessonProgressStorage` contract scenarios
 - [x] `CourseRepositoryTest` — extended with search (title, instructor), `filterCourses` (blank, category-match), and lesson-progress persistence/failure tests
+
+---
+
+## Sprint 5 — Wave3 → Supabase Backend Migration
+
+> **Status: ✅ Complete**
+
+### Networking & API Layer
+- [x] `Wave3ApiClient` deprecated (marked `@Deprecated(DeprecationLevel.WARNING)`) — no longer used in production
+- [x] `SupabaseCourseDataSource` created: Supabase Postgrest for relational data + Supabase Storage for signed URLs
+- [x] `CourseDataSource` internal interface introduced (mirrors `AuthProviderService` pattern) to keep `CourseRepository` testable
+
+### Dependency Injection (Koin)
+- [x] `sharedModule` refactored: creates a singleton `SupabaseClient` with `Auth + Postgrest + Storage` plugins installed
+- [x] Both `AuthRepository` and `CourseRepository` now share the singleton `SupabaseClient` (no duplicate clients)
+- [x] `AuthRepository` new constructor: `AuthRepository(sessionManager, supabaseClient)` for DI
+- [x] `CourseRepository` new constructors: `CourseRepository(supabaseClient, ...)` for DI and `CourseRepository(supabaseUrl, supabaseAnonKey, ...)` for iOS
+- [x] `WAVE3_BASE_URL` build config field removed (no longer referenced)
+- [x] Koin upgraded to **4.0.0** in `shared` (`koin-core`) and `androidApp` (`koin-android`)
+- [x] `storage-kt:2.5.4` added to shared dependencies
+
+### Course Data — Supabase Postgrest
+- [x] `getCourses()` → `SELECT * FROM courses`
+- [x] `getCourseById(id)` → `SELECT * FROM courses WHERE id = ?`
+- [x] `getLessons(courseId)` → `SELECT * FROM lessons WHERE course_id = ? ORDER BY order_index ASC`
+- [x] `getEnrolledCourses()` → `SELECT * FROM enrollments` (RLS-scoped to current user)
+- [x] `enrollInCourse(courseId)` → `INSERT INTO enrollments` with `RETURNING`
+- [x] `markLessonComplete(lessonId)` → `UPSERT INTO lesson_completions`
+- [x] `getCertificates()` → `SELECT * FROM certificates` (RLS-scoped)
+
+### Secure Content Delivery (Storage Signed URLs)
+- [x] `CourseRepository.getSignedContentUrl(lesson)` generates time-limited signed URLs via Supabase Storage
+- [x] Video content (`LessonContentType.VIDEO`) → 4-hour TTL (14 400 s)
+- [x] PDF / text / quiz content → 1-hour TTL (3 600 s)
+- [x] External `http(s)://` URLs are returned unchanged (no signing needed)
+- [x] Storage bucket constant: `course-content`
+
+### iOS Entry Point
+- [x] `AkuApp.swift` updated: `CourseRepository` now instantiated with `supabaseUrl` + `supabaseAnonKey` instead of `Wave3ApiClient()`
+
+### Test Coverage
+- [x] `FakeCourseDataSource` test double added (in-memory, configurable failure injection)
+- [x] `CourseRepositoryTest` fully rewritten using `FakeCourseDataSource` — no Wave3ApiClient/MockEngine dependency
+- [x] All 13 test cases pass (fetch, cache, error propagation, search, filter, progress)
+
+### Documentation
+- [x] `docs/courses.md` updated for Supabase backend (tables, signed URLs, TTL reference)
+- [x] `KOTLIN MULTIPLATFORM/README.md` updated (Wave3ApiClient deprecated notice, SupabaseCourseDataSource listed)
+- [x] `APP_PROGRESS.md` updated (this section)
 
 ---
 
@@ -352,18 +404,19 @@ Tests live in `shared/src/commonTest/` and run on the JVM host via `./gradlew :s
 |---|---|---|
 | `AuthRepositoryTest` | `auth` | Login, logout, register flows |
 | `SessionManagerTest` | `auth` | `StateFlow` session state, token restore |
-| `Wave3ApiClientTest` | `api` | HTTP request construction, error mapping |
+| `Wave3ApiClientTest` | `api` | HTTP request construction, error mapping (legacy) |
 | `AuthTokenTest` | `auth/model` | Token expiry logic |
-| `CourseRepositoryTest` | `course` | Catalogue fetch, enrolment, cache, search/filter, progress |
+| `CourseRepositoryTest` | `course` | Catalogue fetch, enrolment, cache, search/filter, progress (uses `FakeCourseDataSource`) |
 | `LessonProgressTest` | `course` | `LessonProgressStorage` contract (8 test cases) |
 
 ---
 
 ## Next-Sprint Backlog
 
-- [ ] iOS lesson video player (AVPlayer integration)
+- [ ] iOS lesson video player (AVPlayer integration with Supabase signed URL)
 - [ ] iOS quiz UI (inline quiz card after video)
 - [ ] iOS profile, settings, and certificates screens
 - [ ] iOS splash & onboarding pager
-- [ ] FCM `google-services.json` + `AkuFirebaseMessagingService` wiring
+- [ ] FCM `google-services.json` + `AkuFirebaseMessagingService` wiring — `onNewToken` sends token to Supabase Edge Function
 - [ ] Release `v0.1.0` tag → verify CI release job produces signed APK
+- [ ] iOS: Migrate from two separate `SupabaseClient` instances (Auth + Course) to a single shared singleton

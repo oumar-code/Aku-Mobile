@@ -1,7 +1,6 @@
 package com.akuplatform.shared.course
 
 import com.akuplatform.shared.api.ApiError
-import com.akuplatform.shared.api.Wave3ApiClient
 import com.akuplatform.shared.auth.FakeTokenStorage
 import com.akuplatform.shared.auth.SessionManager
 import com.akuplatform.shared.auth.model.AuthToken
@@ -9,18 +8,8 @@ import com.akuplatform.shared.course.cache.CourseCache
 import com.akuplatform.shared.course.model.Course
 import com.akuplatform.shared.course.model.Enrollment
 import com.akuplatform.shared.course.model.Lesson
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,46 +43,35 @@ class CourseRepositoryTest {
     private lateinit var fakeCache: FakeCourseCache
     private lateinit var fakeProgress: FakeLessonProgressStorage
 
-    private val coursesJson = """
-        [
-          {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240,"category":"Programming"},
-          {"id":"c2","title":"Web Dev 101","description":"HTML, CSS, JS","instructor":"Prof. Jones","lesson_count":12,"duration_minutes":360,"category":"Web"}
-        ]
-    """.trimIndent()
+    private val catalogueCourses = listOf(
+        Course(id = "c1", title = "Intro to Python", description = "Learn Python basics",
+            instructor = "Dr. Smith", lessonCount = 8, durationMinutes = 240, category = "Programming"),
+        Course(id = "c2", title = "Web Dev 101", description = "HTML, CSS, JS",
+            instructor = "Prof. Jones", lessonCount = 12, durationMinutes = 360, category = "Web")
+    )
 
-    private val courseJson = """
-        {"id":"c1","title":"Intro to Python","description":"Learn Python basics","instructor":"Dr. Smith","lesson_count":8,"duration_minutes":240,"category":"Programming"}
-    """.trimIndent()
+    private val courseLessons = listOf(
+        Lesson(id = "l1", courseId = "c1", title = "Variables", durationMinutes = 15,
+            orderIndex = 1, isCompleted = false),
+        Lesson(id = "l2", courseId = "c1", title = "Functions", durationMinutes = 20,
+            orderIndex = 2, isCompleted = true)
+    )
 
-    private val lessonsJson = """
-        [
-          {"id":"l1","course_id":"c1","title":"Variables","duration_minutes":15,"order_index":1,"is_completed":false},
-          {"id":"l2","course_id":"c1","title":"Functions","duration_minutes":20,"order_index":2,"is_completed":true}
-        ]
-    """.trimIndent()
+    private val courseEnrollments = listOf(
+        Enrollment(id = "e1", courseId = "c1", userId = "u1",
+            enrolledAt = "2024-01-01", progressPercent = 50)
+    )
 
-    private val enrollmentsJson = """
-        [{"id":"e1","course_id":"c1","user_id":"u1","enrolled_at":"2024-01-01","progress_percent":50}]
-    """.trimIndent()
-
-    private val enrollmentJson = """
-        {"id":"e2","course_id":"c2","user_id":"u1","enrolled_at":"2024-06-01","progress_percent":0}
-    """.trimIndent()
-
-    private fun clientWith(status: HttpStatusCode, body: String): Wave3ApiClient {
-        val engine = MockEngine {
-            respond(
-                content = body,
-                status = status,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            )
-        }
-        return Wave3ApiClient(
-            httpClient = HttpClient(engine) {
-                install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-            }
-        )
-    }
+    private fun repoWith(
+        dataSource: FakeCourseDataSource,
+        cache: FakeCourseCache = fakeCache,
+        progress: FakeLessonProgressStorage? = null
+    ) = CourseRepository(
+        sessionManager = sessionManager,
+        dataSource = dataSource,
+        cache = cache,
+        progressStorage = progress
+    )
 
     @BeforeTest
     fun setUp() {
@@ -109,24 +87,24 @@ class CourseRepositoryTest {
         fakeProgress = FakeLessonProgressStorage()
     }
 
+    // ── getCourses ─────────────────────────────────────────────────────────────
+
     @Test
-    fun `getCourses fetches from API and stores in cache`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, coursesJson), sessionManager, fakeCache)
+    fun `getCourses fetches from data source and stores in cache`() = runTest {
+        val repo = repoWith(FakeCourseDataSource(courses = catalogueCourses))
         val result = repo.getCourses()
         assertTrue(result.isSuccess)
-        val courses = result.getOrThrow()
-        assertEquals(2, courses.size)
-        assertEquals("c1", courses[0].id)
-        assertEquals("Intro to Python", courses[0].title)
+        assertEquals(2, result.getOrThrow().size)
+        assertEquals("c1", result.getOrThrow()[0].id)
         assertEquals(1, fakeCache.putCount, "cache should have been populated once")
     }
 
     @Test
-    fun `getCourses returns cached value without hitting the API`() = runTest {
+    fun `getCourses returns cached value without hitting the data source`() = runTest {
         val seeded = listOf(Course(id = "cached", title = "Cached Course", description = "from cache"))
         fakeCache.seed(seeded)
-        // Point the API at an error engine — if it is called the test would fail via 500
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        // Data source always throws — if it is called the test fails via exception
+        val repo = repoWith(FakeCourseDataSource(shouldThrow = ApiError.ServerError(500)))
         val result = repo.getCourses()
         assertTrue(result.isSuccess)
         assertEquals("cached", result.getOrThrow().first().id)
@@ -134,70 +112,73 @@ class CourseRepositoryTest {
     }
 
     @Test
-    fun `getCourses propagates API errors`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+    fun `getCourses propagates data source errors`() = runTest {
+        val repo = repoWith(FakeCourseDataSource(shouldThrow = ApiError.ServerError(500)))
         val result = repo.getCourses()
         assertTrue(result.isFailure)
         assertIs<ApiError.ServerError>(result.exceptionOrNull())
     }
 
-    @Test
-    fun `getCourseById returns correct course`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, courseJson), sessionManager, fakeCache)
-        val result = repo.getCourseById("c1")
-        assertTrue(result.isSuccess)
-        val course = result.getOrThrow()
-        assertEquals("c1", course.id)
-        assertEquals("Dr. Smith", course.instructor)
-    }
+    // ── getCourseById ──────────────────────────────────────────────────────────
 
     @Test
-    fun `getLessons returns lessons in order`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, lessonsJson), sessionManager, fakeCache)
+    fun `getCourseById returns correct course`() = runTest {
+        val repo = repoWith(FakeCourseDataSource(courses = catalogueCourses))
+        val result = repo.getCourseById("c1")
+        assertTrue(result.isSuccess)
+        assertEquals("c1", result.getOrThrow().id)
+        assertEquals("Dr. Smith", result.getOrThrow().instructor)
+    }
+
+    // ── getLessons ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `getLessons returns lessons for course`() = runTest {
+        val repo = repoWith(FakeCourseDataSource(lessonsMap = mapOf("c1" to courseLessons)))
         val result = repo.getLessons("c1")
         assertTrue(result.isSuccess)
-        val lessons = result.getOrThrow()
-        assertEquals(2, lessons.size)
-        assertEquals("l1", lessons[0].id)
-        assertEquals(2, lessons[1].orderIndex)
-        assertTrue(lessons[1].isCompleted)
+        assertEquals(2, result.getOrThrow().size)
+        assertEquals("l1", result.getOrThrow()[0].id)
+        assertEquals(2, result.getOrThrow()[1].orderIndex)
+        assertTrue(result.getOrThrow()[1].isCompleted)
     }
+
+    // ── getEnrolledCourses ────────────────────────────────────────────────────
 
     @Test
     fun `getEnrolledCourses returns enrollments`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, enrollmentsJson), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource(enrollments = courseEnrollments))
         val result = repo.getEnrolledCourses()
         assertTrue(result.isSuccess)
-        val enrollments = result.getOrThrow()
-        assertEquals(1, enrollments.size)
-        assertEquals(50, enrollments[0].progressPercent)
+        assertEquals(1, result.getOrThrow().size)
+        assertEquals(50, result.getOrThrow()[0].progressPercent)
     }
+
+    // ── enrollInCourse ────────────────────────────────────────────────────────
 
     @Test
     fun `enrollInCourse returns new enrollment and invalidates cache`() = runTest {
         val seeded = listOf(Course(id = "c1", title = "T", description = "D"))
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, enrollmentJson), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource(courses = catalogueCourses))
         val result = repo.enrollInCourse("c2")
         assertTrue(result.isSuccess)
         assertNotNull(result.getOrNull())
-        // Cache should be invalidated so next getCourses call goes to API
         assertEquals(null, fakeCache.getCourses(), "cache should be cleared after enrollment")
     }
 
     @Test
-    fun `enrollInCourse propagates API error without touching cache`() = runTest {
+    fun `enrollInCourse propagates error without touching cache`() = runTest {
         val seeded = listOf(Course(id = "c1", title = "T", description = "D"))
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.Unauthorized, "{}"), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource(shouldThrow = ApiError.Unauthorized()))
         val result = repo.enrollInCourse("c2")
         assertTrue(result.isFailure)
         assertIs<ApiError.Unauthorized>(result.exceptionOrNull())
-        // Cache should still be intact
         assertNotNull(fakeCache.getCourses(), "cache should not be cleared on failed enrollment")
     }
 
-    // ── Search & Filter Tests ─────────────────────────────────────────────────
+    // ── searchCourses ─────────────────────────────────────────────────────────
 
     @Test
     fun `searchCourses returns all cached courses for blank query`() = runTest {
@@ -206,10 +187,8 @@ class CourseRepositoryTest {
             Course(id = "c2", title = "Kotlin", description = "", instructor = "Jones")
         )
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
-        val result = repo.searchCourses("")
-        assertTrue(result.isSuccess)
-        assertEquals(2, result.getOrThrow().size)
+        val repo = repoWith(FakeCourseDataSource(shouldThrow = ApiError.ServerError(500)))
+        assertEquals(2, repo.searchCourses("").getOrThrow().size)
     }
 
     @Test
@@ -219,12 +198,10 @@ class CourseRepositoryTest {
             Course(id = "c2", title = "Advanced Kotlin", description = "", instructor = "Jones")
         )
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource())
         val result = repo.searchCourses("python")
-        assertTrue(result.isSuccess)
-        val courses = result.getOrThrow()
-        assertEquals(1, courses.size)
-        assertEquals("c1", courses.first().id)
+        assertEquals(1, result.getOrThrow().size)
+        assertEquals("c1", result.getOrThrow().first().id)
     }
 
     @Test
@@ -234,12 +211,13 @@ class CourseRepositoryTest {
             Course(id = "c2", title = "Kotlin", description = "", instructor = "Prof Jones")
         )
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource())
         val result = repo.searchCourses("smith")
-        assertTrue(result.isSuccess)
         assertEquals(1, result.getOrThrow().size)
         assertEquals("c1", result.getOrThrow().first().id)
     }
+
+    // ── filterCourses ─────────────────────────────────────────────────────────
 
     @Test
     fun `filterCourses returns all when category is blank`() = runTest {
@@ -248,10 +226,8 @@ class CourseRepositoryTest {
             Course(id = "c2", title = "Design", description = "", category = "Art")
         )
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
-        val result = repo.filterCourses("")
-        assertTrue(result.isSuccess)
-        assertEquals(2, result.getOrThrow().size)
+        val repo = repoWith(FakeCourseDataSource())
+        assertEquals(2, repo.filterCourses("").getOrThrow().size)
     }
 
     @Test
@@ -262,38 +238,27 @@ class CourseRepositoryTest {
             Course(id = "c3", title = "Kotlin", description = "", category = "programming")
         )
         fakeCache.seed(seeded)
-        val repo = CourseRepository(clientWith(HttpStatusCode.InternalServerError, "{}"), sessionManager, fakeCache)
-        val result = repo.filterCourses("Programming")
-        assertTrue(result.isSuccess)
-        val ids = result.getOrThrow().map { it.id }
+        val repo = repoWith(FakeCourseDataSource())
+        val ids = repo.filterCourses("Programming").getOrThrow().map { it.id }
         assertEquals(2, ids.size)
         assertTrue(ids.containsAll(listOf("c1", "c3")))
     }
 
-    // ── Lesson Progress Tests ─────────────────────────────────────────────────
+    // ── Lesson progress ───────────────────────────────────────────────────────
 
     @Test
     fun `markLessonComplete persists lesson id to progressStorage`() = runTest {
-        val repo = CourseRepository(
-            apiClient = clientWith(HttpStatusCode.OK, "{}"),
-            sessionManager = sessionManager,
-            cache = fakeCache,
-            progressStorage = fakeProgress
-        )
+        val repo = repoWith(FakeCourseDataSource(), progress = fakeProgress)
         val result = repo.markLessonComplete("lesson-99")
         assertTrue(result.isSuccess)
-        // The fake storage should now contain the lesson id for the token prefix user
-        val completed = repo.getCompletedLessons()
-        assertTrue(completed.contains("lesson-99"))
+        assertTrue(repo.getCompletedLessons().contains("lesson-99"))
     }
 
     @Test
-    fun `markLessonComplete does not persist on API failure`() = runTest {
-        val repo = CourseRepository(
-            apiClient = clientWith(HttpStatusCode.InternalServerError, "{}"),
-            sessionManager = sessionManager,
-            cache = fakeCache,
-            progressStorage = fakeProgress
+    fun `markLessonComplete does not persist on data source failure`() = runTest {
+        val repo = repoWith(
+            FakeCourseDataSource(shouldThrow = ApiError.ServerError(500)),
+            progress = fakeProgress
         )
         val result = repo.markLessonComplete("lesson-99")
         assertTrue(result.isFailure)
@@ -302,7 +267,8 @@ class CourseRepositoryTest {
 
     @Test
     fun `getCompletedLessons returns empty set when no progressStorage`() = runTest {
-        val repo = CourseRepository(clientWith(HttpStatusCode.OK, "{}"), sessionManager, fakeCache)
+        val repo = repoWith(FakeCourseDataSource())
         assertTrue(repo.getCompletedLessons().isEmpty())
     }
 }
+

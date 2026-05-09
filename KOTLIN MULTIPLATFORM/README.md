@@ -12,11 +12,12 @@ KOTLIN MULTIPLATFORM/
 │       ├── androidMain/ # Android-specific implementations
 │       ├── commonMain/  # Shared Kotlin code (all platforms)
 │       │   └── kotlin/com/akuplatform/shared/
-│       │       ├── api/               # API clients (Wave3ApiClient)
+│       │       ├── api/               # API clients (Wave3ApiClient - deprecated)
 │       │       ├── auth/              # Authentication (AuthRepository, SessionManager, TokenStorage)
-│       │       ├── course/            # Course content (CourseRepository, models, CourseCache)
+│       │       ├── course/            # Course content (CourseRepository, SupabaseCourseDataSource, models)
 │       │       │   ├── model/         # Course, Lesson, Enrollment data classes
-│       │       │   └── cache/         # CourseCache interface + InMemoryCourseCache
+│       │       │   ├── cache/         # CourseCache interface + SqlDelightCourseCache
+│       │       │   └── progress/      # LessonProgressStorage interface
 │       │       ├── notifications/     # NotificationService interface
 │       │       └── di/                # Koin dependency injection modules
 │       ├── iosMain/     # iOS-specific implementations (IosTokenStorage, IosNotificationService)
@@ -52,20 +53,22 @@ KOTLIN MULTIPLATFORM/
 ## Key Modules
 
 ### `com.akuplatform.shared.api`
-- **Wave3ApiClient** – HTTP client for the Akulearn Wave 3 REST API. Covers auth and course endpoints.
+- **Wave3ApiClient** – _(Deprecated)_ Legacy HTTP client for the Wave 3 REST API. No longer used in production; replaced by `SupabaseClient`.
 
 ### `com.akuplatform.shared.auth`
-- **AuthRepository** – High-level authentication operations (login, logout, register).
+- **AuthRepository** – High-level Supabase authentication operations (login, logout, register, password reset, profile, password change).
 - **SessionManager** – Manages the active user session using `StateFlow`.
 - **TokenStorage** – Interface for persisting `AuthToken` on each platform.
 - **model/AuthToken** – Data class holding access token, refresh token, and expiry.
 
 ### `com.akuplatform.shared.course`
-- **CourseRepository** – Course catalogue, lesson loading, and enrolment management.
-- **cache/CourseCache** – Interface + `InMemoryCourseCache` with configurable TTL (5 min default).
-- **model/Course** – Course metadata (title, instructor, lesson count, duration).
-- **model/Lesson** – Individual lesson with ordering and completion state.
+- **CourseRepository** – Course catalogue, lesson loading, enrolment, and Supabase Storage signed URL generation for media content.
+- **SupabaseCourseDataSource** – Supabase Postgrest + Storage backend for all course data operations.
+- **cache/SqlDelightCourseCache** – SQLDelight-backed cache with 5-minute TTL for offline course access.
+- **model/Course** – Course metadata (title, instructor, lesson count, duration, category).
+- **model/Lesson** – Individual lesson with ordering, completion state, and content URL.
 - **model/Enrollment** – User enrolment record with progress percentage.
+- **progress/LessonProgressStorage** – Interface for local lesson completion persistence.
 
 ### `com.akuplatform.shared.notifications`
 - **NotificationService** – Cross-platform interface for push-notification permission management.
@@ -77,3 +80,5 @@ KOTLIN MULTIPLATFORM/
 - `local.properties` and `.gradle/` are excluded from version control via `.gitignore`.
 - The `gradlew` / `gradlew.bat` wrapper scripts are committed so builds work without a local Gradle installation.
 - Dependency injection is handled by Koin (`sharedModule` for platform-agnostic bindings; `androidModule` for Android-specific bindings).
+- All Supabase operations require `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables (both auth and course data go through the same `SupabaseClient` singleton).
+

@@ -64,6 +64,21 @@ internal data class TokenResponse(
     @SerialName("expires_in") val expiresIn: Long
 )
 
+/**
+ * Legacy HTTP client for the Wave 3 custom API.
+ *
+ * **Deprecated.** All production networking now goes through the [SupabaseClient]
+ * singleton configured in `SharedModule`.  This class is retained only so that
+ * existing tests continue to compile during the transition period.
+ *
+ * - Authentication → Supabase GoTrue (`auth` plugin)
+ * - Course data    → Supabase Postgrest (`postgrest` plugin)
+ * - Media content  → Supabase Storage signed URLs (`storage` plugin)
+ */
+@Deprecated(
+    message = "Wave3ApiClient has been retired. Use SupabaseClient via the Koin DI graph instead.",
+    level = DeprecationLevel.WARNING
+)
 class Wave3ApiClient(
     private val baseUrl: String = BASE_URL,
     private val httpClient: HttpClient = defaultClient()

@@ -15,9 +15,12 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val androidModule: Module = module {
-    // Pass the build-time base URL to the shared module; sharedModule falls back
-    // to the hard-coded production URL when the env var is absent (local/debug builds).
-    includes(sharedModule(BuildConfig.WAVE3_BASE_URL))
+    includes(
+        sharedModule(
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            supabaseAnonKey = BuildConfig.SUPABASE_ANON_KEY
+        )
+    )
     single<TokenStorage> { AndroidTokenStorage(androidContext()) }
     single<NotificationService> { AndroidNotificationService(androidContext()) }
     single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(androidContext()) }
