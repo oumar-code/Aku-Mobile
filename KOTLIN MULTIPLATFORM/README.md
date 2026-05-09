@@ -52,10 +52,10 @@ KOTLIN MULTIPLATFORM/
 ## Key Modules
 
 ### `com.akuplatform.shared.api`
-- **Wave3ApiClient** – HTTP client for the Akulearn Wave 3 REST API. Covers auth and course endpoints.
+- **Wave3ApiClient** – HTTP client for the Akulearn Wave 3 REST API. Covers course, enrolment, certificate, and other non-auth endpoints.
 
 ### `com.akuplatform.shared.auth`
-- **AuthRepository** – High-level authentication operations (login, logout, register).
+- **AuthRepository** – High-level Supabase authentication operations (login, logout, register, password reset, profile, password change).
 - **SessionManager** – Manages the active user session using `StateFlow`.
 - **TokenStorage** – Interface for persisting `AuthToken` on each platform.
 - **model/AuthToken** – Data class holding access token, refresh token, and expiry.
@@ -77,3 +77,4 @@ KOTLIN MULTIPLATFORM/
 - `local.properties` and `.gradle/` are excluded from version control via `.gitignore`.
 - The `gradlew` / `gradlew.bat` wrapper scripts are committed so builds work without a local Gradle installation.
 - Dependency injection is handled by Koin (`sharedModule` for platform-agnostic bindings; `androidModule` for Android-specific bindings).
+- Supabase auth requires `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Course/content APIs continue to use `WAVE3_BASE_URL`.
