@@ -17,7 +17,6 @@ import org.koin.dsl.module
 val androidModule: Module = module {
     includes(
         sharedModule(
-            baseUrl = BuildConfig.WAVE3_BASE_URL,
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseAnonKey = BuildConfig.SUPABASE_ANON_KEY
         )

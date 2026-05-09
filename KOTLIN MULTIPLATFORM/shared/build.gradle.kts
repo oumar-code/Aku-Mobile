@@ -34,11 +34,12 @@ kotlin {
                 implementation("io.ktor:ktor-client-logging:2.3.12")
                 implementation("io.github.jan-tennert.supabase:gotrue-kt:2.5.4")
                 implementation("io.github.jan-tennert.supabase:postgrest-kt:2.5.4")
+                implementation("io.github.jan-tennert.supabase:storage-kt:2.5.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
                 // Dependency injection
-                implementation("io.insert-koin:koin-core:3.5.6")
+                implementation("io.insert-koin:koin-core:4.0.0")
                 // SQLDelight runtime (common)
                 implementation("app.cash.sqldelight:runtime:2.0.2")
                 implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")

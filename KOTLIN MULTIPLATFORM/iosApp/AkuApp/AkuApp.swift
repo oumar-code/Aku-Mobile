@@ -5,7 +5,7 @@ import shared  // KMP shared framework
 @main
 struct AkuApp: App {
 
-    // Wire up storage → session → repository — mirrors MainActivity's Koin graph.
+    // Wire up storage → session → repositories — mirrors the Android Koin graph.
     private let tokenStorage = IosTokenStorage()
     private let sessionManager: SessionManager
     private let authRepository: AuthRepository
@@ -14,14 +14,23 @@ struct AkuApp: App {
 
     init() {
         let environment = ProcessInfo.processInfo.environment
+        let supabaseUrl = environment["SUPABASE_URL"] ?? ""
+        let supabaseAnonKey = environment["SUPABASE_ANON_KEY"] ?? ""
+
         sessionManager = SessionManager(tokenStorage: tokenStorage)
+
+        // Both repositories share the same Supabase credentials.
+        // On iOS, each creates its own SupabaseClient since Koin DI is not
+        // available at this layer.  Auth uses GoTrue; CourseRepository uses
+        // Postgrest and Storage.
         authRepository = AuthRepository(
             sessionManager: sessionManager,
-            supabaseUrl: environment["SUPABASE_URL"] ?? "",
-            supabaseAnonKey: environment["SUPABASE_ANON_KEY"] ?? ""
+            supabaseUrl: supabaseUrl,
+            supabaseAnonKey: supabaseAnonKey
         )
         courseRepository = CourseRepository(
-            apiClient: Wave3ApiClient(),
+            supabaseUrl: supabaseUrl,
+            supabaseAnonKey: supabaseAnonKey,
             sessionManager: sessionManager
         )
     }

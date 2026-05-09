@@ -28,6 +28,21 @@ class AuthRepository internal constructor(
     private val authService: AuthProviderService
 ) {
 
+    /**
+     * Primary constructor used by the Koin DI graph.
+     * Shares the singleton [SupabaseClient] (which already has [Auth] installed)
+     * rather than creating a second client.
+     */
+    constructor(sessionManager: SessionManager, supabaseClient: SupabaseClient) : this(
+        sessionManager = sessionManager,
+        authService = SupabaseAuthProviderService(supabaseClient)
+    )
+
+    /**
+     * Secondary constructor retained for iOS / standalone usage where a DI
+     * container is not available.  Creates its own [SupabaseClient] configured
+     * with only the [Auth] plugin.
+     */
     constructor(sessionManager: SessionManager, supabaseUrl: String, supabaseAnonKey: String) : this(
         sessionManager = sessionManager,
         authService = createAuthProviderService(supabaseUrl, supabaseAnonKey)

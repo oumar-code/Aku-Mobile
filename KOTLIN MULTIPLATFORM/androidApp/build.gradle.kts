@@ -19,7 +19,6 @@ android {
 
         buildConfigField("String", "SUPABASE_URL", "\"${System.getenv("SUPABASE_URL") ?: ""}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${System.getenv("SUPABASE_ANON_KEY") ?: ""}\"")
-        buildConfigField("String", "WAVE3_BASE_URL", "\"${System.getenv("WAVE3_BASE_URL") ?: ""}\"")
     }
 
     buildTypes {
@@ -109,7 +108,7 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.4.1")
 
     // Dependency injection
-    implementation("io.insert-koin:koin-android:3.5.6")
+    implementation("io.insert-koin:koin-android:4.0.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 
