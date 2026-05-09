@@ -1,18 +1,19 @@
-package com.akuplatform.android
+package com.akulearn.android
 
 import android.app.Application
-import com.akuplatform.shared.di.initKoin
+import com.akulearn.android.di.androidModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
 
 class AkuApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        initKoin {
-            androidLogger()
+        startKoin {
+            androidLogger(Level.ERROR)
             androidContext(this@AkuApplication)
-            // If you use BuildConfig for keys, you can inject them here
+            modules(androidModule)
         }
     }
 }
