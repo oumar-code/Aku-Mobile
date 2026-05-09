@@ -1,11 +1,10 @@
 plugins {
-    // Declare versions here and set 'apply false' to share them across modules
-    id("com.android.application") version "8.5.2" apply false
-    id("com.android.library") version "8.5.2" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
-    id("org.jetbrains.kotlin.multiplatform") version "2.1.0" apply false
-    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0" apply false
-    id("app.cash.sqldelight") version "2.0.2" apply false
-    id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.android.application") apply false
+    id("com.android.library") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    id("org.jetbrains.kotlin.multiplatform") apply false
+    id("org.jetbrains.kotlin.plugin.compose") apply false
+    id("org.jetbrains.kotlin.plugin.serialization") apply false
+    id("app.cash.sqldelight") apply false
+    id("com.google.gms.google-services") apply false
 }
