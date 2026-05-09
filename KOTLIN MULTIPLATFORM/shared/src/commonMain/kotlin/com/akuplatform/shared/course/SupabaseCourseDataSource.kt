@@ -11,6 +11,7 @@ import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -83,14 +84,14 @@ internal class SupabaseCourseDataSource(
     override suspend fun getCourseById(id: String): Course =
         safeCall {
             client.postgrest["courses"].select {
-                eq("id", id)
+                filter { eq("id", id) }
             }.decodeSingle<Course>()
         }
 
     override suspend fun getLessons(courseId: String): List<Lesson> =
         safeCall {
             client.postgrest["lessons"].select {
-                eq("course_id", courseId)
+                filter { eq("course_id", courseId) }
             }.decodeList<Lesson>().sortedBy { it.orderIndex }
         }
 
@@ -106,7 +107,7 @@ internal class SupabaseCourseDataSource(
             else -> CourseDataSource.PDF_TTL_SECONDS
         }
         return safeCall {
-            client.storage[CourseDataSource.CONTENT_BUCKET].createSignedUrl(path, expiresIn = ttl)
+            client.storage[CourseDataSource.CONTENT_BUCKET].createSignedUrl(path, expiresIn = ttl.seconds)
         }
     }
 

@@ -70,11 +70,15 @@ class AuthRepository internal constructor(
     }
 
     suspend fun login(email: String, pass: String): Result<AuthToken> = runAuthCall {
-        authService.signIn(email, pass).also(sessionManager::saveSession)
+        val token = authService.signIn(email, pass)
+        sessionManager.saveSession(token)
+        token
     }
 
     suspend fun register(email: String, pass: String, name: String): Result<AuthToken> = runAuthCall {
-        authService.signUp(email, pass, name).also(sessionManager::saveSession)
+        val token = authService.signUp(email, pass, name)
+        sessionManager.saveSession(token)
+        token
     }
 
     suspend fun requestPasswordReset(email: String): Result<Unit> = runAuthCall {
@@ -82,7 +86,8 @@ class AuthRepository internal constructor(
     }
 
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> = runAuthCall {
-        authService.changePassword(currentPassword, newPassword)?.let(sessionManager::saveSession)
+        val token = authService.changePassword(currentPassword, newPassword)
+        if (token != null) sessionManager.saveSession(token)
     }
 
     suspend fun getProfile(): Result<UserProfile> = runAuthCall {
