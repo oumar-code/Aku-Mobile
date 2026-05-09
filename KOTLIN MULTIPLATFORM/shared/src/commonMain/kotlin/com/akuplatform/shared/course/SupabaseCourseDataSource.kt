@@ -141,7 +141,8 @@ internal class SupabaseCourseDataSource(
         block()
     } catch (e: RestException) {
         when (e.statusCode) {
-            401, 403 -> throw ApiError.Unauthorized(e.message ?: "Unauthorized.")
+            401 -> throw ApiError.Unauthorized(e.message ?: "Authentication required.")
+            403 -> throw ApiError.Unauthorized(e.message ?: "Access forbidden.")
             else -> throw ApiError.ServerError(e.statusCode, e.message ?: "Supabase error.")
         }
     } catch (e: HttpRequestException) {

@@ -29,10 +29,11 @@ import org.koin.dsl.module
  * - [DatabaseDriverFactory] — SQLite driver factory (required)
  * - [LessonProgressStorage] — lesson completion persistence (optional)
  *
- * @param supabaseUrl      Supabase project URL.  Required for a functional app;
- *                         if blank, auth and course operations will surface a
- *                         configuration error at runtime.
- * @param supabaseAnonKey  Supabase anonymous API key.
+ * @param supabaseUrl      Supabase project URL.  Required for a functional app.
+ *                         If blank, the client will be created with an empty URL and
+ *                         all network operations will fail with a connection error;
+ *                         no configuration-time exception is thrown.
+ * @param supabaseAnonKey  Supabase anonymous API key.  Same caveat as [supabaseUrl].
  */
 fun sharedModule(
     supabaseUrl: String = "",
