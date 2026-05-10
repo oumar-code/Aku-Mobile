@@ -84,7 +84,7 @@ sqldelight {
 
 android {
     namespace = "com.akuplatform.shared"
-    compileSdk = 34 // Lowered from 35 to match AGP 8.5.2
+    compileSdk = 36
     defaultConfig {
         minSdk = 26
     }
