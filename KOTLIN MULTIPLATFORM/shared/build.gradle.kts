@@ -27,48 +27,48 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-core:2.3.12")
-                implementation("io.ktor:ktor-client-auth:2.3.12")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
-                implementation("io.ktor:ktor-client-logging:2.3.12")
-                implementation("io.github.jan-tennert.supabase:gotrue-kt:2.5.4")
-                implementation("io.github.jan-tennert.supabase:postgrest-kt:2.5.4")
-                implementation("io.github.jan-tennert.supabase:storage-kt:2.5.4")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.auth)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.ktor.client.logging)
+                implementation(libs.supabase.gotrue)
+                implementation(libs.supabase.postgrest)
+                implementation(libs.supabase.storage)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
                 // Dependency injection
-                implementation("io.insert-koin:koin-core:4.0.0")
+                implementation(libs.koin.core)
                 // SQLDelight runtime (common)
-                implementation("app.cash.sqldelight:runtime:2.0.2")
-                implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+                implementation(libs.sqldelight.runtime)
+                implementation(libs.sqldelight.coroutines)
             }
         }
 
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-                implementation("io.ktor:ktor-client-mock:2.3.12")
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)
                 // SQLDelight in-memory SQLite driver for JVM tests
-                implementation("app.cash.sqldelight:sqlite-driver:2.0.2")
+                implementation(libs.sqldelight.sqlite.driver)
             }
         }
 
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:2.3.12")
+                implementation(libs.ktor.client.cio)
                 // SQLDelight Android driver
-                implementation("app.cash.sqldelight:android-driver:2.0.2")
+                implementation(libs.sqldelight.android.driver)
             }
         }
 
         val iosMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.3.12")
+                implementation(libs.ktor.client.darwin)
                 // SQLDelight Native (iOS) driver
-                implementation("app.cash.sqldelight:native-driver:2.0.2")
+                implementation(libs.sqldelight.native.driver)
             }
         }
     }
