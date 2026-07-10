@@ -31,10 +31,13 @@ class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel(
             authRepository.register(email, password, name)
                 .onSuccess { _uiState.value = RegisterUiState(isSuccess = true) }
                 .onFailure { e ->
-                    val message = when (e) {
-                        is ApiError.Unauthorized -> "Registration not permitted."
-                        is ApiError.Network -> "Network error. Check your connection."
-                        is ApiError.ServerError -> "Server error. Please try again later."
+                    val message = when {
+                        e is ApiError.Unauthorized -> "Registration not permitted."
+                        e is ApiError.Network -> "Network error. Check your connection."
+                        e is ApiError.ServerError && e.code == 500 &&
+                            e.message?.contains("not configured", ignoreCase = true) == true ->
+                            "Service unavailable. The app is not properly configured. Contact support."
+                        e is ApiError.ServerError -> "Server error. Please try again later."
                         else -> e.message ?: "Registration failed. Please try again."
                     }
                     _uiState.value = RegisterUiState(error = message)

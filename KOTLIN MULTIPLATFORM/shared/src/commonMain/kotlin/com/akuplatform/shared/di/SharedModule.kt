@@ -30,10 +30,11 @@ import org.koin.dsl.module
  * - [LessonProgressStorage] — lesson completion persistence (optional)
  *
  * @param supabaseUrl      Supabase project URL.  Required for a functional app.
- *                         If blank, the client will be created with an empty URL and
- *                         all network operations will fail with a connection error;
- *                         no configuration-time exception is thrown.
- * @param supabaseAnonKey  Supabase anonymous API key.  Same caveat as [supabaseUrl].
+ *                         Supply via the `SUPABASE_URL` environment variable at
+ *                         build time, or add it to `local.properties`.
+ *                         Passing a blank value will throw [IllegalStateException]
+ *                         at Koin startup to surface the misconfiguration immediately.
+ * @param supabaseAnonKey  Supabase anonymous API key.  Same requirement as [supabaseUrl].
  */
 fun sharedModule(
     supabaseUrl: String = "",
@@ -41,6 +42,14 @@ fun sharedModule(
 ): Module = module {
     // ── Supabase client (shared singleton) ────────────────────────────────────
     single<SupabaseClient> {
+        check(supabaseUrl.isNotBlank()) {
+            "SUPABASE_URL is not configured. Add it to local.properties or set the " +
+                "SUPABASE_URL environment variable before building."
+        }
+        check(supabaseAnonKey.isNotBlank()) {
+            "SUPABASE_ANON_KEY is not configured. Add it to local.properties or set the " +
+                "SUPABASE_ANON_KEY environment variable before building."
+        }
         createSupabaseClient(
             supabaseUrl = supabaseUrl,
             supabaseKey = supabaseAnonKey

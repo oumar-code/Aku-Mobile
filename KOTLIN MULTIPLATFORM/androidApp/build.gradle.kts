@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +7,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.gms.google-services")
 }
+
+// Load local.properties so developers can supply credentials without setting
+// environment variables.  Environment variables take precedence (for CI).
+val localProps = Properties().also { props ->
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) props.load(localFile.inputStream())
+}
+
+fun credential(name: String): String =
+    System.getenv(name) ?: localProps.getProperty(name) ?: ""
 
 android {
     namespace = "com.akulearn.android"
@@ -17,8 +29,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${System.getenv("SUPABASE_URL") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${System.getenv("SUPABASE_ANON_KEY") ?: ""}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"${credential("SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${credential("SUPABASE_ANON_KEY")}\"")
     }
 
     buildTypes {
