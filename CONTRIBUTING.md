@@ -75,8 +75,8 @@ Open Android Studio → **File → Open** → select the `KOTLIN MULTIPLATFORM/`
 
 | Variable | Purpose |
 |----------|---------|
-| `SUPABASE_URL` | Supabase project URL used by the shared auth repository |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key used by the shared auth repository |
+| `SUPABASE_URL` | Supabase project URL used by shared auth/course repositories (`NEXT_PUBLIC_SUPABASE_URL` also accepted) |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key used by shared auth/course repositories (`NEXT_PUBLIC_SUPABASE_ANON_KEY` also accepted) |
 | `WAVE3_BASE_URL` | Override the Wave 3 API base URL for course/content endpoints (defaults to `https://api.akulearn.com/v3`) |
 
 These are injected into `BuildConfig` at compile time.

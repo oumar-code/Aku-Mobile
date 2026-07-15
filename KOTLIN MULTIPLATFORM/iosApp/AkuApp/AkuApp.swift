@@ -14,8 +14,12 @@ struct AkuApp: App {
 
     init() {
         let environment = ProcessInfo.processInfo.environment
-        let supabaseUrl = environment["SUPABASE_URL"] ?? ""
-        let supabaseAnonKey = environment["SUPABASE_ANON_KEY"] ?? ""
+        let supabaseUrl = environment["SUPABASE_URL"]
+            ?? environment["NEXT_PUBLIC_SUPABASE_URL"]
+            ?? ""
+        let supabaseAnonKey = environment["SUPABASE_ANON_KEY"]
+            ?? environment["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+            ?? ""
 
         sessionManager = SessionManager(tokenStorage: tokenStorage)
 
