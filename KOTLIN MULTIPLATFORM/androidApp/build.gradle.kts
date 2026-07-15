@@ -15,8 +15,18 @@ val localProps = Properties().also { props ->
     if (localFile.exists()) props.load(localFile.inputStream())
 }
 
-fun credential(name: String): String =
-    System.getenv(name) ?: localProps.getProperty(name) ?: ""
+fun credential(name: String): String {
+    val vercelAlias = when (name) {
+        "SUPABASE_URL" -> "NEXT_PUBLIC_SUPABASE_URL"
+        "SUPABASE_ANON_KEY" -> "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        else -> null
+    }
+    return System.getenv(name)
+        ?: vercelAlias?.let(System::getenv)
+        ?: localProps.getProperty(name)
+        ?: vercelAlias?.let(localProps::getProperty)
+        ?: ""
+}
 
 android {
     namespace = "com.akulearn.android"

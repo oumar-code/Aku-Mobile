@@ -80,5 +80,4 @@ KOTLIN MULTIPLATFORM/
 - `local.properties` and `.gradle/` are excluded from version control via `.gitignore`.
 - The `gradlew` / `gradlew.bat` wrapper scripts are committed so builds work without a local Gradle installation.
 - Dependency injection is handled by Koin (`sharedModule` for platform-agnostic bindings; `androidModule` for Android-specific bindings).
-- All Supabase operations require `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables (both auth and course data go through the same `SupabaseClient` singleton).
-
+- All Supabase operations require `SUPABASE_URL` and `SUPABASE_ANON_KEY` (or Vercel-style aliases `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`) so auth and course data use the same credentials via `SupabaseClient`.
