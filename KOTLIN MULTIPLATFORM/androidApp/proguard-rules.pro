@@ -30,6 +30,9 @@
 # Keep Koin
 -keep class org.koin.** { *; }
 
+# SLF4J binder is optional at runtime; avoid release minify failure.
+-dontwarn org.slf4j.impl.StaticLoggerBinder
+
 # WebView JS interface
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
