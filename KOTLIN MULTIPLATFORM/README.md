@@ -34,6 +34,27 @@ KOTLIN MULTIPLATFORM/
 - Android SDK (set `ANDROID_HOME` or create `local.properties` in this directory)
 - Xcode (for iOS targets, macOS only)
 
+## Local Shell Environment
+
+Set Supabase variables in your current shell session before running Gradle:
+
+```bash
+export SUPABASE_URL="https://supabase.com/dashboard/project/rcxiuzzwwwschjcbeenb"
+export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeGl1enp3d3dzY2hqY2JlZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNzA1NTAsImV4cCI6MjA4NTk0NjU1MH0.QdrCEnJ0xM9eXlhSpj1fLS4th83e4TJTYb-3QTrGbC8"
+```
+
+To persist across terminal restarts:
+
+```bash
+cat <<'EOF' >> ~/.bashrc
+export SUPABASE_URL="https://supabase.com/dashboard/project/rcxiuzzwwwschjcbeenb"
+export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeGl1enp3d3dzY2hqY2JlZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNzA1NTAsImV4cCI6MjA4NTk0NjU1MH0.QdrCEnJ0xM9eXlhSpj1fLS4th83e4TJTYb-3QTrGbC8"
+EOF
+source ~/.bashrc
+```
+
+The Android Gradle config normalizes this dashboard URL to the API URL automatically.
+
 ## Building
 
 ```bash

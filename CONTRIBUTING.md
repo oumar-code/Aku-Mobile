@@ -75,11 +75,30 @@ Open Android Studio → **File → Open** → select the `KOTLIN MULTIPLATFORM/`
 
 | Variable | Purpose |
 |----------|---------|
-| `SUPABASE_URL` | Supabase project URL used by the shared auth repository |
+| `SUPABASE_URL` | Supabase project API URL (or dashboard project URL, which Gradle normalizes) used by the shared auth repository |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key used by the shared auth repository |
 | `WAVE3_BASE_URL` | Override the Wave 3 API base URL for course/content endpoints (defaults to `https://api.akulearn.com/v3`) |
 
 These are injected into `BuildConfig` at compile time.
+
+Copy-paste setup for your current shell session:
+
+```bash
+export SUPABASE_URL="https://supabase.com/dashboard/project/rcxiuzzwwwschjcbeenb"
+export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeGl1enp3d3dzY2hqY2JlZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNzA1NTAsImV4cCI6MjA4NTk0NjU1MH0.QdrCEnJ0xM9eXlhSpj1fLS4th83e4TJTYb-3QTrGbC8"
+```
+
+To persist across terminal restarts:
+
+```bash
+cat <<'EOF' >> ~/.bashrc
+export SUPABASE_URL="https://supabase.com/dashboard/project/rcxiuzzwwwschjcbeenb"
+export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeGl1enp3d3dzY2hqY2JlZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNzA1NTAsImV4cCI6MjA4NTk0NjU1MH0.QdrCEnJ0xM9eXlhSpj1fLS4th83e4TJTYb-3QTrGbC8"
+EOF
+source ~/.bashrc
+```
+
+The Android Gradle config normalizes this dashboard URL to the API URL automatically.
 
 ---
 

@@ -18,6 +18,14 @@ val localProps = Properties().also { props ->
 fun credential(name: String): String =
     System.getenv(name) ?: localProps.getProperty(name) ?: ""
 
+val supabaseUrl = Regex("^https://supabase\\.com/dashboard/project/([a-z0-9-]+)$")
+    .matchEntire(credential("SUPABASE_URL"))
+    ?.groupValues
+    ?.getOrNull(1)
+    ?.let { "https://$it.supabase.co" }
+    ?: credential("SUPABASE_URL")
+val supabaseAnonKey = credential("SUPABASE_ANON_KEY")
+
 android {
     namespace = "com.akulearn.android"
     compileSdk = 36
@@ -29,8 +37,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${credential("SUPABASE_URL")}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${credential("SUPABASE_ANON_KEY")}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
