@@ -50,7 +50,8 @@ android {
             )
             // Release signing: supply these environment variables in CI or locally.
             // Set KEYSTORE_FILE to the path of your .jks / .keystore file.
-            // If the variables are absent the build falls back to the debug key (local only).
+            // If the variables are absent the build falls back to the debug key so
+            // GitHub release APKs remain installable.
             val keystoreFile = System.getenv("KEYSTORE_FILE")
             if (keystoreFile != null) {
                 val storePassword = requireNotNull(System.getenv("KEYSTORE_PASSWORD")) {
@@ -68,6 +69,8 @@ android {
                     cfg.keyAlias = keyAlias
                     cfg.keyPassword = keyPassword
                 }
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
