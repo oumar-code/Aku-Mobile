@@ -1,22 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Material "school" icon scaled to fill the adaptive-icon safe zone (72 dp centred
-    inside the 108 dp canvas).  Scale factor 3×, offset (+18, +18).
--->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Mortarboard base (chevron shape) -->
+    <!-- Stylized Akudemy "A" mark for launcher icon -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,27L21,45l33,18l27,-14.73V69h6V45L54,27z" />
+        android:pathData="M54,19L26,89h12l6.8,-18h18.4L70,89h12L54,19zM48.8,61L54,46.6L59.2,61z" />
 
-    <!-- Mortarboard tassel / hanging corners -->
+    <!-- Crossbar accent -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M33,57.54v12L54,81l21,-11.46v-12L54,69z" />
+        android:fillColor="#90CAF9"
+        android:pathData="M43,67h22v8H43z" />
 
 </vector>

@@ -23,7 +23,7 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                Text("Welcome to Akulearn!")
+                Text("Welcome to Akudemy!")
                     .font(.headline)
                     .multilineTextAlignment(.center)
 
@@ -57,7 +57,7 @@ struct HomeView: View {
 
                 Spacer()
             }
-            .navigationTitle("Akulearn")
+            .navigationTitle("Akudemy")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

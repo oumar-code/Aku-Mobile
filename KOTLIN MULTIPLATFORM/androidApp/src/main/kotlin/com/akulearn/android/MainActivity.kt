@@ -197,7 +197,7 @@ private fun AkulearnApp(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Akulearn",
+                            text = "Akudemy",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary

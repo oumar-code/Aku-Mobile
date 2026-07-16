@@ -83,13 +83,13 @@ fun LoginScreen(
             // Branding
             Icon(
                 imageVector = Icons.Filled.School,
-                contentDescription = "Akulearn logo",
+                contentDescription = "Akudemy logo",
                 modifier = Modifier.size(72.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Akulearn",
+                text = "Akudemy",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )

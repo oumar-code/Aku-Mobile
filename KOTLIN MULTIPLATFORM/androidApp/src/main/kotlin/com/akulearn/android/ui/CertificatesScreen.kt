@@ -116,7 +116,7 @@ fun CertificatesScreen(
                                 onShare = {
                                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, "I completed \"${cert.courseTitle}\" on Akulearn! 🎉")
+                                        putExtra(Intent.EXTRA_TEXT, "I completed \"${cert.courseTitle}\" on Akudemy! 🎉")
                                     }
                                     context.startActivity(Intent.createChooser(shareIntent, "Share certificate"))
                                 }

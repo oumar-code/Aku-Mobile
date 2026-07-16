@@ -43,7 +43,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Akulearn") }
+                title = { Text("Akudemy") }
             )
         }
     ) { innerPadding ->
@@ -56,7 +56,7 @@ fun HomeScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                val greeting = if (uiState.userName.isNotBlank()) "Welcome back, ${uiState.userName}!" else "Welcome to Akulearn!"
+                val greeting = if (uiState.userName.isNotBlank()) "Welcome back, ${uiState.userName}!" else "Welcome to Akudemy!"
                 Text(
                     text = greeting,
                     style = MaterialTheme.typography.headlineSmall,

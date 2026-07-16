@@ -23,7 +23,7 @@ struct LoginView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                Text("Akulearn")
+                Text("Akudemy")
                     .font(.largeTitle.bold())
                     .padding(.bottom, 48)
 

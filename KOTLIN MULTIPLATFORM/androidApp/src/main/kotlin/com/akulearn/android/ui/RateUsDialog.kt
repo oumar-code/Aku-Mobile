@@ -23,7 +23,7 @@ fun RateUsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Enjoying Akulearn? ⭐") },
+        title = { Text("Enjoying Akudemy? ⭐") },
         text = {
             Text("Great job completing your first course! If you're enjoying the app, please take a moment to rate us on the Play Store.")
         },

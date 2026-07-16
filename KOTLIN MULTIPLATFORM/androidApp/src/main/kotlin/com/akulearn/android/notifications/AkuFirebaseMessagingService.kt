@@ -121,7 +121,7 @@ class AkuFirebaseMessagingService : FirebaseMessagingService() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Akulearn course and lesson updates"
+                description = "Akudemy course and lesson updates"
             }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
@@ -130,6 +130,6 @@ class AkuFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val CHANNEL_ID   = "akulearn_main"
-        private const val CHANNEL_NAME = "Akulearn"
+        private const val CHANNEL_NAME = "Akudemy"
     }
 }
